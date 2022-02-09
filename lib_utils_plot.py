@@ -1,25 +1,25 @@
-# -------------------------------------------------------------------------------------
+"""
+Library Features:
+
+Name:          lib_utils_plot
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
 # Libraries
 import logging
-import tempfile
-import os
 import json
-import pickle
 import cartopy
 import rasterio
 import numpy as np
 import pandas as pd
-import xarray as xr
-import scipy.io
-
-from datetime import datetime
 
 from lib_utils_io import write_file_tif
 from lib_utils_colormap import load
 
 from copy import deepcopy
-from rasterio.transform import Affine
-from osgeo import gdal, gdalconst
 
 import matplotlib.pylab as plt
 import matplotlib.ticker as mticker
@@ -33,7 +33,12 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 logging.getLogger('rasterio').setLevel(logging.WARNING)
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
-# -------------------------------------------------------------------------------------
+
+from lib_info_args import logger_name
+
+# Logging
+log_stream = logging.getLogger(logger_name)
+#######################################################################################
 
 
 # -------------------------------------------------------------------------------------

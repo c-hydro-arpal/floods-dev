@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------------------
 # Script information
-script_name='ARPAL - FLOOD SCENARIOS - RUNNER - REALTIME'
+script_name='APP - FLOOD SCENARIOS - RUNNER - REALTIME'
 script_version="1.0.0"
 script_date='2020/12/14'
 
@@ -12,8 +12,8 @@ flag_execution=true
 
 # Script Info
 script_folder="/home/cfmi.arpal.org/fabio.delogu/library/arpal-dev/flood/"
-script_file_main="/home/cfmi.arpal.org/fabio.delogu/library/arpal-dev/flood/arpal_flood_main.py"
-script_file_settings="/home/cfmi.arpal.org/fabio.delogu/flood-exec/arpal_flood_configuration.json"
+script_file_main="/home/cfmi.arpal.org/fabio.delogu/library/arpal-dev/flood/app_flood_scenario_main.py"
+script_file_settings="/home/cfmi.arpal.org/fabio.delogu/flood-exec/arpal_flood_scenario_configuration.json"
 script_period_execution=1 # hour(s)
 
 # VirtualEnv Info

@@ -20,7 +20,10 @@ from lib_utils_section import read_file_section, read_file_river_station_lut, me
     map_info_section, read_file_fields
 from lib_utils_io import read_file_json, read_obj, write_obj
 from lib_utils_system import fill_tags2string, make_folder
+from lib_info_args import logger_name
 
+# Logging
+log_stream = logging.getLogger(logger_name)
 # Debug
 import matplotlib.pylab as plt
 ######################################################################################
@@ -79,7 +82,7 @@ class DriverGeo:
             self.folder_name_section_registry = src_dict[self.flag_section_data]['registry'][self.folder_name_tag]
             self.file_name_section_registry = src_dict[self.flag_section_data]['registry'][self.file_name_tag]
         else:
-            logging.error(' ===> Section registry file information not available')
+            log_stream.error(' ===> Section registry file information not available')
             raise IOError('Check your configuration file')
         if 'river_station_lut' in list(src_dict[self.flag_section_data].keys()):
             self.folder_name_section_rs_lut = src_dict[self.flag_section_data]['river_station_lut'][self.folder_name_tag]
@@ -87,14 +90,14 @@ class DriverGeo:
         else:
             self.folder_name_section_rs_lut = None
             self.file_name_section_rs_lut = None
-            logging.warning(' ===> Section river lut file information not available')
+            log_stream.warning(' ===> Section river lut file information not available')
         if 'fields' in list(src_dict[self.flag_section_data].keys()):
             self.folder_name_section_fields = src_dict[self.flag_section_data]['fields'][self.folder_name_tag]
             self.file_name_section_fields = src_dict[self.flag_section_data]['fields'][self.file_name_tag]
         else:
             self.folder_name_section_fields = None
             self.file_name_section_fields = None
-            logging.warning(' ===> Section fields file information not available')
+            log_stream.warning(' ===> Section fields file information not available')
 
         self.folder_name_hydro = src_dict[self.flag_drift_data][self.folder_name_tag]
         self.file_name_hydro = src_dict[self.flag_drift_data][self.file_name_tag]
@@ -135,7 +138,7 @@ class DriverGeo:
         if os.path.exists(file_path_section_registry):
             section_data_collections = read_file_section(file_path_section_registry, file_sep=';')
         else:
-            logging.error(' ===> Section registry file ' + file_path_section_registry + ' not available')
+            log_stream.error(' ===> Section registry file ' + file_path_section_registry + ' not available')
             raise IOError('Check your configuration file')
 
         if (file_path_section_rs_lut is not None) and (os.path.exists(file_path_section_rs_lut)):
@@ -177,7 +180,7 @@ class DriverGeo:
                 file_data_tmp = read_file_info(file_path_hydro_def, hydro_id)
                 file_data_collections = {**file_data_collections, **file_data_tmp}
             else:
-                logging.error(' ===> Hydro reference file ' + file_path_hydro_def + ' not available')
+                log_stream.error(' ===> Hydro reference file ' + file_path_hydro_def + ' not available')
                 raise IOError('Check your configuration file')
 
         return file_data_collections
@@ -191,10 +194,10 @@ class DriverGeo:
             if self.file_name_geo.endswith('mat'):
                 data_geo = read_file_geo(os.path.join(self.folder_name_geo, self.file_name_geo))
             else:
-                logging.error(' ===> Geographical reference file ' + self.file_name_geo + ' not available')
+                log_stream.error(' ===> Geographical reference file ' + self.file_name_geo + ' not available')
                 raise IOError('Check your configuration file')
         else:
-            logging.error(' ===> Geographical reference file ' + self.file_name_geo + ' not available')
+            log_stream.error(' ===> Geographical reference file ' + self.file_name_geo + ' not available')
             raise IOError('Check your configuration file')
         return data_geo
 
@@ -234,25 +237,25 @@ class DriverGeo:
             if 'altitude' in list(domain_info_reference.keys()):
                 domain_altitude = domain_info_reference['altitude']
             else:
-                logging.error(' ===> "Altitude" variable is not available in geographical information')
+                log_stream.error(' ===> "Altitude" variable is not available in geographical information')
                 raise IOError('Check your geographical information')
 
             if 'flow_directions' in list(domain_info_reference.keys()):
                 domain_flow_directions = domain_info_reference['flow_directions']
             else:
-                logging.error(' ===> "Flow Directions" variable is not available in geographical information')
+                log_stream.error(' ===> "Flow Directions" variable is not available in geographical information')
                 raise IOError('Check your geographical information')
 
             if 'longitude' in list(domain_info_reference.keys()):
                 domain_longitude = domain_info_reference['longitude']
             else:
-                logging.error(' ===> "Longitude" variable is not available in geographical information')
+                log_stream.error(' ===> "Longitude" variable is not available in geographical information')
                 raise IOError('Check your geographical information')
 
             if 'latitude' in list(domain_info_reference.keys()):
                 domain_latitude = domain_info_reference['latitude']
             else:
-                logging.error(' ===> "Flow Directions" variable is not available in geographical information')
+                log_stream.error(' ===> "Flow Directions" variable is not available in geographical information')
                 raise IOError('Check your geographical information')
 
             # Section information
@@ -266,7 +269,7 @@ class DriverGeo:
                 if domain_name in list(self.data_hydro.keys()):
                     domain_section_group = self.data_hydro[domain_name]
                 else:
-                    logging.warning(' ===> Section ' + domain_name + ' is not available on hydro dataset')
+                    log_stream.warning(' ===> Section ' + domain_name + ' is not available on hydro dataset')
                     domain_section_group = None
                 domain_section_fields['section_group'] = domain_section_group
 
@@ -290,7 +293,7 @@ class DriverGeo:
                         domain_area_attr = domain_section_attrs['section_drainage_area']
 
                 else:
-                    logging.warning(' ===> Section ' + domain_name + ' is not available on section dataset')
+                    log_stream.warning(' ===> Section ' + domain_name + ' is not available on section dataset')
                     domain_section_attrs = None
 
                 if (domain_section_fields is not None) and (domain_section_attrs is not None):
@@ -302,7 +305,7 @@ class DriverGeo:
                 elif (domain_section_fields is None) and (domain_section_attrs is None):
                     domain_section_fields = None
                 else:
-                    logging.error(' ===> Section ' + domain_name + ' objects are not allowed')
+                    log_stream.error(' ===> Section ' + domain_name + ' objects are not allowed')
                     raise NotImplementedError('Case not implemented yet')
 
                 domain_section_db[domain_section_id] = domain_section_fields
@@ -312,7 +315,7 @@ class DriverGeo:
             domain_info_extended = {**domain_info_reference, **domain_info_file}
 
         else:
-            logging.error(' ===> Domain info filename is not available. Check your settings.')
+            log_stream.error(' ===> Domain info filename is not available. Check your settings.')
             raise IOError('File not found')
 
         return domain_info_extended
@@ -334,10 +337,10 @@ class DriverGeo:
             if file_path_dr_area.endswith('.mat'):
                 domain_area = read_file_drainage_area(file_path_dr_area)
             else:
-                logging.error(' ===> Drainage area file format not supported')
+                log_stream.error(' ===> Drainage area file format not supported')
                 raise NotImplementedError('Format not supported yet')
         else:
-            logging.error(' ===> Drainage area is not available. Check your settings.')
+            log_stream.error(' ===> Drainage area is not available. Check your settings.')
             raise IOError('File not found')
 
         return domain_area
@@ -470,12 +473,12 @@ class DriverGeo:
     # Method to organize geographical data
     def organize_geo(self):
 
-        logging.info(' ---> Organize geographical datasets ... ')
+        log_stream.info(' ---> Organize geographical datasets ... ')
 
         domain_collection_list = {}
         for domain_name_step in self.domain_name_list:
 
-            logging.info(' ----> Domain "' + domain_name_step + '" ... ')
+            log_stream.info(' ----> Domain "' + domain_name_step + '" ... ')
 
             file_path_collections = self.define_domain_collection(domain_name_step)
 
@@ -491,16 +494,16 @@ class DriverGeo:
                 make_folder(folder_name_collections)
                 write_obj(file_path_collections, domain_collection)
 
-                logging.info(' ----> Domain "' + domain_name_step + '" ... DONE')
+                log_stream.info(' ----> Domain "' + domain_name_step + '" ... DONE')
 
             else:
 
-                logging.info(' ----> Domain "' + domain_name_step + '" ... SKIPPED. Datasets previously computed.')
+                log_stream.info(' ----> Domain "' + domain_name_step + '" ... SKIPPED. Datasets previously computed.')
                 domain_collection = read_obj(file_path_collections)
 
             domain_collection_list[domain_name_step] = domain_collection
 
-        logging.info(' ---> Organize geographical datasets ... DONE')
+        log_stream.info(' ---> Organize geographical datasets ... DONE')
 
         return domain_collection_list
     # -------------------------------------------------------------------------------------

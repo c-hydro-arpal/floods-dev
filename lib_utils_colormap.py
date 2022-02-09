@@ -1,19 +1,36 @@
+"""
+Library Features:
+
+Name:          lib_utils_colormap
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
+# Libraries
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 import os
 import json
 import glob
 import csv
+#######################################################################################
 
 
+# -------------------------------------------------------------------------------------
+# Method to write rgb colormaps
 def write_rgb_colormaps(filename, color_list, n=10):
     with open(filename, 'w') as file:
         for color_row in color_list:
             color_rgb = ','.join(str(row) for row in color_row)
             color_rgb = '[' + color_rgb + '],'
             file.write(color_rgb + '\n')
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to get rgb colormaps
 def get_rgb_colormaps(minimum, maximum, value):
     minimum, maximum = float(minimum), float(maximum)
     ratio = 2 * (value-minimum) / (maximum - minimum)
@@ -21,18 +38,27 @@ def get_rgb_colormaps(minimum, maximum, value):
     r = int(max(0, 255*(ratio - 1)))
     g = 255 - b - r
     return r, g, b
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to search rgb colormaps
 def colormaps_path():
     """Returns application's default path for storing user-defined colormaps"""
     return os.path.dirname(__file__)
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to get rgb defined by system
 def get_system_colormaps():
     """Returns the list of colormaps that ship with matplotlib"""
     return [m for m in cm.datad]
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to get rgb defined by user
 def get_user_colormaps(cmap_fldr=colormaps_path()):
     """Returns a list of user-defined colormaps in the specified folder (defaults to
     standard colormaps folder if not specified)."""
@@ -48,8 +74,11 @@ def get_user_colormaps(cmap_fldr=colormaps_path()):
                 user_colormaps.append(cmap_dict.get('tick_label', name))
                 user_colormaps.append(cmap_dict.get('tick_loc', name))
     return user_colormaps
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to load colormap
 def load_colormap(json_file):
     """Generates and returns a matplotlib colormap from the specified JSON file,
     or None if the file was invalid."""
@@ -89,8 +118,11 @@ def load_colormap(json_file):
         setattr(colormap, 'tickloc', colormap_tickloc)
 
     return colormap
+# -------------------------------------------------------------------------------------
 
 
+# -------------------------------------------------------------------------------------
+# Method to set colormap
 def load(cmap_name, cmap_folder=colormaps_path()):
     """Returns the matplotlib colormap of the specified name -
     if not found in the predefined
@@ -123,3 +155,4 @@ def load(cmap_name, cmap_folder=colormaps_path()):
     else:
         raise ValueError('Colormap not found')
     return cmap
+# -------------------------------------------------------------------------------------

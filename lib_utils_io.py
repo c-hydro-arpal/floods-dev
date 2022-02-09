@@ -1,4 +1,13 @@
-# -------------------------------------------------------------------------------------
+"""
+Library Features:
+
+Name:          lib_utils_io
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
 # Libraries
 import logging
 import tempfile
@@ -11,9 +20,13 @@ import scipy.io
 
 from rasterio.transform import Affine
 from osgeo import gdal, gdalconst
+from lib_info_args import logger_name
 
 logging.getLogger('rasterio').setLevel(logging.WARNING)
-# -------------------------------------------------------------------------------------
+
+# Logging
+log_stream = logging.getLogger(logger_name)
+#######################################################################################
 
 
 # -------------------------------------------------------------------------------------
@@ -82,7 +95,7 @@ def read_file_tif(file_name):
             file_data_tmp = file_handle.read(band_id + 1)
             file_data.append(file_data_tmp)
     else:
-        logging.error(' ===> File multi-band are not supported')
+        log_stream.error(' ===> File multi-band are not supported')
         raise NotImplementedError('File multi-band not implemented yet')
 
     return file_data, file_proj, file_geotrans
@@ -120,7 +133,7 @@ def create_darray_3d(data, time, geo_x, geo_y, geo_1d=True,
                                        coord_name_x: (dim_name_x, geo_x),
                                        coord_name_y: (dim_name_y, geo_y)})
     else:
-        logging.error(' ===> Longitude and Latitude must be 1d')
+        log_stream.error(' ===> Longitude and Latitude must be 1d')
         raise IOError('Variable shape is not valid')
 
     return data_da
@@ -149,7 +162,7 @@ def create_darray_2d(data, geo_x, geo_y, geo_1d=True, name='geo',
                                        coord_name_y: (dim_name_y, geo_y)},
                                name=name)
     else:
-        logging.error(' ===> Longitude and Latitude must be 1d')
+        log_stream.error(' ===> Longitude and Latitude must be 1d')
         raise IOError('Variable shape is not valid')
 
     return data_da

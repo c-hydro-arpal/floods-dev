@@ -1,11 +1,25 @@
-# -------------------------------------------------------------------------------------
+"""
+Library Features:
+
+Name:          lib_utils_section
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
 # Libraries
 import logging
 import os
 import json
 
 import pandas as pd
-# -------------------------------------------------------------------------------------
+
+from lib_info_args import logger_name
+
+# Logging
+log_stream = logging.getLogger(logger_name)
+#######################################################################################
 
 
 # -------------------------------------------------------------------------------------
@@ -37,13 +51,13 @@ def map_info_section(section_data_in, section_fields_map=None, section_fields_ex
     if section_fields_map is not None:
         section_data_tmp = section_data_in.rename(columns=section_fields_map)
     else:
-        logging.error(' ===> Section map fields obj is not defined')
+        log_stream.error(' ===> Section map fields obj is not defined')
         raise RuntimeError('Obj fields map must be defined in the procedure')
 
     if section_fields_excluded is not None:
         section_data_out = section_data_tmp.drop(columns=section_fields_excluded)
     else:
-        logging.error(' ===> Section excluded fields obj is not defined')
+        log_stream.error(' ===> Section excluded fields obj is not defined')
         raise RuntimeError('Obj fields excluded must be defined in the procedure')
 
     return section_data_out

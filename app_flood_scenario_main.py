@@ -1,25 +1,26 @@
 #!/usr/bin/python3
 """
-ARPAL Processing Tool - FLOODS SCENARIO
+FLOODS - Scenario Application
 
-__date__ = '20211005'
-__version__ = '1.7.0'
+__date__ = '20220201'
+__version__ = '1.8.0'
 __author__ =
-        'Fabio Delogu (fabio.delogu@cimafoundation.org',
-        'Flavio Pignone (flavio.pignone@cimafoundation.org',
-        'Rocco Masi (rocco.masi@cimafoundation.org',
-        'Lorenzo Campo (lorenzo.campo@cimafoundation.org',
-        'Francesco Silvestro (francesco.silvestro@cimafoundation.org'
+        'Fabio Delogu (fabio.delogu@cimafoundation.org)',
+        'Flavio Pignone (flavio.pignone@cimafoundation.org)',
+        'Rocco Masi (rocco.masi@cimafoundation.org)',
+        'Lorenzo Campo (lorenzo.campo@cimafoundation.org)',
+        'Francesco Silvestro (francesco.silvestro@cimafoundation.org)'
 
-__library__ = 'ARPAL'
+__library__ = 'floods'
 
 General command line:
-python3 arpal_flood_main.py -settings_file configuration.json -time "YYYY-MM-DD HH:MM"
+python3 app_flood_scenario_main.py -settings_file configuration.json -time "YYYY-MM-DD HH:MM"
 
 Version(s):
-20211005 (1.7.0) --> Generic release fpr correcting bugs and managing the empty datasets for observed/modelled discharges
+20220201 (1.8.0) --> Pre-operational release
+20211005 (1.7.0) --> Generic release fpr correcting bugs and managing the empty datasets for obs/mod discharges
 20210515 (1.6.0) --> Generic release for updating tools and modules
-20201214 (1.5.0) --> Pre-operational release
+20201214 (1.5.0) --> Test release
 20200522 (1.0.0) --> Beta release
 """
 
@@ -35,19 +36,20 @@ from driver_data_io_destination import DriverScenario
 
 from argparse import ArgumentParser
 
-# from lib_utils_geo import drainage_area
+from lib_utils_logging import set_logging_file
 from lib_utils_io import read_file_json
-from lib_utils_system import make_folder
 from lib_utils_time import set_time
+from lib_info_args import logger_name, logger_format, time_format_algorithm
+
+# Logging
+log_stream = logging.getLogger(logger_name)
 # -------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------
 # Algorithm information
-alg_version = '1.7.0'
-alg_release = '2021-10-05'
-alg_name = 'FLOODS SCENARIO'
-# Algorithm parameter(s)
-time_format = '%Y-%m-%d %H:%M'
+alg_version = '1.8.0'
+alg_release = '2022-02-01'
+alg_name = 'FLOODS - Scenario Application'
 # -------------------------------------------------------------------------------------
 
 
@@ -63,17 +65,18 @@ def main():
     data_settings = read_file_json(alg_settings)
 
     # Set algorithm logging
-    make_folder(data_settings['log']['folder_name'])
-    set_logging(logger_file=os.path.join(data_settings['log']['folder_name'],
-                                         data_settings['log']['file_name']))
+    set_logging_file(
+        logger_name=logger_name,
+        logger_formatter=logger_format,
+        logger_file=os.path.join(data_settings['log']['folder_name'], data_settings['log']['file_name']))
     # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------
     # Info algorithm
-    logging.info(' ============================================================================ ')
-    logging.info(' ==> ' + alg_name + ' (Version: ' + alg_version + ' Release_Date: ' + alg_release + ')')
-    logging.info(' ==> START ... ')
-    logging.info(' ')
+    log_stream.info(' ============================================================================ ')
+    log_stream.info(' ==> ' + alg_name + ' (Version: ' + alg_version + ' Release_Date: ' + alg_release + ')')
+    log_stream.info(' ==> START ... ')
+    log_stream.info(' ')
 
     # Time algorithm information
     start_time = time.time()
@@ -84,7 +87,7 @@ def main():
     time_now, time_run, time_range = set_time(
         time_run_args=alg_time,
         time_run_file=data_settings['time']['time_now'],
-        time_format=time_format,
+        time_format=time_format_algorithm,
         time_period=data_settings['time']['time_period'],
         time_frequency=data_settings['time']['time_frequency'],
         time_rounding=data_settings['time']['time_rounding']
@@ -98,7 +101,7 @@ def main():
         dst_dict=data_settings['data']['static']['destination'],
         alg_ancillary=data_settings['algorithm']['ancillary'],
         alg_template_tags=data_settings['algorithm']['template'],
-        flag_cleaning_geo=data_settings['algorithm']['flags']['cleaning_geo_data'])
+        flag_cleaning_geo=data_settings['algorithm']['flags']['cleaning_static_data'])
     geo_data_collection = driver_data_geo.organize_geo()
     # -------------------------------------------------------------------------------------
 
@@ -113,10 +116,11 @@ def main():
             time_run=time_step,
             geo_data_collection=geo_data_collection,
             src_dict=data_settings['data']['dynamic']['source'],
-            ancillary_dict=data_settings['data']['dynamic']['ancillary'],
+            anc_dict=data_settings['data']['dynamic']['ancillary'],
             alg_ancillary=data_settings['algorithm']['ancillary'],
             alg_template_tags=data_settings['algorithm']['template'],
-            flag_cleaning_ancillary=data_settings['algorithm']['flags']['cleaning_dynamic_data_ancillary_discharge'])
+            flag_cleaning_anc_discharge_obs=data_settings['algorithm']['flags']['cleaning_dynamic_data_discharge_obs'],
+            flag_cleaning_anc_discharge_sim=data_settings['algorithm']['flags']['cleaning_dynamic_data_discharge_sim'])
         discharge_data_collection = driver_data_source_discharge.organize_discharge()
 
         # Scenario datasets
@@ -126,12 +130,15 @@ def main():
             discharge_data_collection=discharge_data_collection,
             geo_data_collection=geo_data_collection,
             src_dict=data_settings['data']['static']['source'],
-            ancillary_dict=data_settings['data']['dynamic']['ancillary'],
+            anc_dict=data_settings['data']['dynamic']['ancillary'],
             dst_dict=data_settings['data']['dynamic']['destination'],
             alg_ancillary=data_settings['algorithm']['ancillary'],
             alg_template_tags=data_settings['algorithm']['template'],
-            flag_cleaning_ancillary=data_settings['algorithm']['flags']['cleaning_dynamic_data_ancillary_scenario'],
-            flag_cleaning_scenario=data_settings['algorithm']['flags']['cleaning_scenario_data'])
+            flag_cleaning_anc_scenario_info=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_info'],
+            flag_cleaning_anc_scenario_file=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_file'],
+            flag_cleaning_anc_scenario_map=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_maps'],
+            flag_cleaning_plot_scenario=data_settings['algorithm']['flags']['cleaning_dynamic_plot']
+        )
         scenario_info_collection = driver_data_destination_scenario.organize_scenario_datasets()
         scenario_map_collection = driver_data_destination_scenario.compute_scenario_map(scenario_info_collection)
         driver_data_destination_scenario.dump_scenario_map(scenario_map_collection, scenario_info_collection)
@@ -143,13 +150,12 @@ def main():
     # Info algorithm
     time_elapsed = round(time.time() - start_time, 1)
 
-    logging.info(' ')
-    logging.info(' ==> ' + alg_name + ' (Version: ' + alg_version + ' Release_Date: ' + alg_release + ')')
-    logging.info(' ==> TIME ELAPSED: ' + str(time_elapsed) + ' seconds')
-    logging.info(' ==> ... END')
-    logging.info(' ==> Bye, Bye')
-    logging.info(' ============================================================================ ')
-
+    log_stream.info(' ')
+    log_stream.info(' ==> ' + alg_name + ' (Version: ' + alg_version + ' Release_Date: ' + alg_release + ')')
+    log_stream.info(' ==> TIME ELAPSED: ' + str(time_elapsed) + ' seconds')
+    log_stream.info(' ==> ... END')
+    log_stream.info(' ==> Bye, Bye')
+    log_stream.info(' ============================================================================ ')
     # -------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------
@@ -174,41 +180,6 @@ def get_args():
         alg_time = None
 
     return alg_settings, alg_time
-
-# -------------------------------------------------------------------------------------
-
-
-# -------------------------------------------------------------------------------------
-# Method to set logging information
-def set_logging(logger_file='log.txt', logger_format=None):
-    if logger_format is None:
-        logger_format = '%(asctime)s %(name)-12s %(levelname)-8s ' \
-                        '%(filename)s:[%(lineno)-6s - %(funcName)20s()] %(message)s'
-
-    # Remove old logging file
-    if os.path.exists(logger_file):
-        os.remove(logger_file)
-
-    # Set level of root debugger
-    logging.root.setLevel(logging.DEBUG)
-
-    # Open logging basic configuration
-    logging.basicConfig(level=logging.DEBUG, format=logger_format, filename=logger_file, filemode='w')
-
-    # Set logger handle
-    logger_handle_1 = logging.FileHandler(logger_file, 'w')
-    logger_handle_2 = logging.StreamHandler()
-    # Set logger level
-    logger_handle_1.setLevel(logging.DEBUG)
-    logger_handle_2.setLevel(logging.DEBUG)
-    # Set logger formatter
-    logger_formatter = logging.Formatter(logger_format)
-    logger_handle_1.setFormatter(logger_formatter)
-    logger_handle_2.setFormatter(logger_formatter)
-
-    # Add handle to logging
-    logging.getLogger('').addHandler(logger_handle_1)
-    logging.getLogger('').addHandler(logger_handle_2)
 
 # -------------------------------------------------------------------------------------
 

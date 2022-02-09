@@ -1,4 +1,13 @@
-# -------------------------------------------------------------------------------------
+"""
+Library Features:
+
+Name:          lib_utils_geo
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
 # Libraries
 import logging
 import pyproj
@@ -6,15 +15,17 @@ import numpy as np
 
 from copy import deepcopy
 from pysheds.grid import Grid
-from affine import Affine
 
 import rasterio
 from rasterio.crs import CRS
 
 from lib_utils_io import read_mat
+from lib_info_args import logger_name
 
+# Logging
+log_stream = logging.getLogger(logger_name)
 # Debug
-import matplotlib.pylab as plt
+# import matplotlib.pylab as plt
 # -------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------
@@ -148,6 +159,7 @@ def compute_section_area(mask_map, mask_tranform,
 
 # --------------------------------------------------------------------------------
 
+
 # --------------------------------------------------------------------------------
 # Method to convert decimal degrees to km
 def Deg2Km_2(deg, lat=None):
@@ -158,6 +170,7 @@ def Deg2Km_2(deg, lat=None):
     return km
 # --------------------------------------------------------------------------------
 
+
 # --------------------------------------------------------------------------------
 # Method to convert decimal degrees to km (2)
 def Deg2Km(deg):
@@ -166,6 +179,7 @@ def Deg2Km(deg):
     km = deg * (np.pi * dRE) / 180;
     return km
 # --------------------------------------------------------------------------------
+
 
 # -------------------------------------------------------------------------------------
 # Method to compute cell area in m^2

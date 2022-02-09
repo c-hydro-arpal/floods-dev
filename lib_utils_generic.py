@@ -3,19 +3,35 @@ Library Features:
 
 Name:          lib_utils_generic
 Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
-Date:          '20200515'
+Date:          '20220208'
 Version:       '1.0.0'
 """
+
 #######################################################################################
 # Library
 import logging
-import re
-import pandas as pd
 import numpy as np
+
+from lib_info_args import logger_name
+
+# Logging
+log_stream = logging.getLogger(logger_name)
 
 # Debug
 # import matplotlib.pylab as plt
 #######################################################################################
+
+
+# -------------------------------------------------------------------------------------
+# Method to reduce dictionary 2 string
+def reduce_dict_2_lists(data_dict):
+    list_key, list_value = [], []
+    for data_key, data_value in data_dict.items():
+        list_key.append(data_key)
+        list_value.append(data_value)
+
+    return list_key, list_value
+# -------------------------------------------------------------------------------------
 
 
 # -------------------------------------------------------------------------------------

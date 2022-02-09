@@ -1,7 +1,23 @@
+"""
+Library Features:
 
+Name:          lib_utils_system
+Author(s):     Fabio Delogu (fabio.delogu@cimafoundation.org)
+Date:          '20220208'
+Version:       '1.0.0'
+"""
+
+#######################################################################################
+import logging
 import os
 from copy import deepcopy
 from datetime import datetime
+
+from lib_info_args import logger_name
+
+# Logging
+log_stream = logging.getLogger(logger_name)
+#######################################################################################
 
 
 # -------------------------------------------------------------------------------------
