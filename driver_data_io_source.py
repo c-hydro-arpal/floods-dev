@@ -561,7 +561,7 @@ class DriverDischarge:
                         time_period_mix, [self.var_name_discharge, self.var_name_type],
                         [value_period_mix, type_period_mix])
 
-                    attrs_mix = {'link_stream': [attr_links_obs, attr_links_sim], 'type_stream': 'obs_sim'}
+                    attrs_mix = {'link_stream': [attr_links_obs, attr_links_sim], 'type_stream': 'obs,sim'}
                     section_dframe_mix.attrs = deepcopy(attrs_mix)
 
                 section_workspace_mix[section_description] = deepcopy(section_dframe_mix)

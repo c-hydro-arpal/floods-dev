@@ -12,7 +12,7 @@
       "cleaning_static_data": false,
       "cleaning_dynamic_data_discharge_obs": false,
       "cleaning_dynamic_data_discharge_sim": false,
-      "cleaning_dynamic_data_scenario_info": false,
+      "cleaning_dynamic_data_scenario_info": true,
       "cleaning_dynamic_data_scenario_file": false,
       "cleaning_dynamic_data_scenario_maps": false,
       "cleaning_dynamic_plot": true
@@ -146,7 +146,7 @@
         },
         "scenario_data_map": {
           "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/scenario_run_obs_ws/{ancillary_sub_path_time_scenario}",
-          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_map.workspace"
+          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_map.tiff"
         }
       },
       "destination" : {

@@ -10,7 +10,7 @@
     },
     "flags": {
       "cleaning_static_data": false,
-      "cleaning_dynamic_data_discharge_obs": true,
+      "cleaning_dynamic_data_discharge_obs": false,
       "cleaning_dynamic_data_discharge_sim": false,
       "cleaning_dynamic_data_scenario_info": false,
       "cleaning_dynamic_data_scenario_file": false,
@@ -20,7 +20,7 @@
     "ancillary": {
       "__comment__": "scenario_analysis: [max_period, all_period], scenario_type: [observed, simulated, mixed], scenario_method: [max]",
       "domain_name" : ["EntellaCompleto"],
-      "tr_min" : 1,
+      "tr_min" : 5,
       "tr_max" : 500,
       "tr_freq": 1,
       "drift_group": 6,
@@ -146,7 +146,7 @@
         },
         "scenario_data_map": {
           "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/scenario_run_obs_ws/{ancillary_sub_path_time_scenario}",
-          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_map.workspace"
+          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_map.tiff"
         }
       },
       "destination" : {

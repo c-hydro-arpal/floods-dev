@@ -16,7 +16,7 @@ import rasterio
 import numpy as np
 import pandas as pd
 
-from lib_utils_io import write_file_tif
+from lib_utils_io import write_file_tif, read_file_tif
 from lib_utils_colormap import load
 
 from copy import deepcopy
@@ -39,6 +39,14 @@ from lib_info_args import logger_name
 # Logging
 log_stream = logging.getLogger(logger_name)
 #######################################################################################
+
+
+# -------------------------------------------------------------------------------------
+# Method to read data values from geotiff format
+def read_file_tiff(file_name):
+    file_data, file_proj, file_geotrans = read_file_tif(file_name)
+    return file_data
+# -------------------------------------------------------------------------------------
 
 
 # -------------------------------------------------------------------------------------

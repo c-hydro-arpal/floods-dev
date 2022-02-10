@@ -76,7 +76,7 @@ def write_file_tif(file_name, file_data, file_wide, file_high, file_geotrans, fi
 
 
 # -------------------------------------------------------------------------------------
-# Method to read file tif
+# Method to read data values in geotiff format
 def read_file_tif(file_name):
 
     file_handle = rasterio.open(file_name)

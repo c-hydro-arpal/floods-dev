@@ -21,14 +21,14 @@ from lib_utils_hazard import read_file_hazard
 from lib_utils_io import read_obj, write_obj
 from lib_utils_system import fill_tags2string, make_folder
 from lib_utils_generic import get_dict_value, reduce_dict_2_lists
-from lib_utils_plot import save_file_tiff, save_file_png, save_file_json
+from lib_utils_plot import save_file_tiff, save_file_png, save_file_json, read_file_tiff
 
 from lib_info_args import logger_name, time_format_algorithm
 
 # Logging
 log_stream = logging.getLogger(logger_name)
 # Debug
-# import matplotlib.pylab as plt
+import matplotlib.pylab as plt
 ######################################################################################
 
 
@@ -137,6 +137,7 @@ class DriverScenario:
         self.domain_scenario_type_tag = 'type_value'
         self.domain_scenario_time_tag = 'time'
         self.domain_scenario_n_tag = 'scenario_n'
+        self.domain_scenario_attrs_tag = 'scenario_attrs'
 
         self.domain_scenario_area_tag = "mappa_aree_new"
         self.domain_scenario_grid_x_tag = "new_x"
@@ -327,7 +328,24 @@ class DriverScenario:
                     log_stream.info(' -----> Time step "' + domain_map_time.strftime(time_format_algorithm) + '" ... ')
 
                     log_stream.info(' ------> Prepare file data ... ')
-                    domain_map_data = read_obj(domain_map_file_ancillary)
+
+                    if domain_map_file_ancillary.endswith('tiff') or \
+                            domain_map_file_ancillary.endswith('tif'):
+                        domain_map_data = read_file_tiff(domain_map_file_ancillary)
+
+                        # DEBUG START
+                        # plt.figure()
+                        # plt.imshow(domain_map_data)
+                        # plt.colorbar()
+                        # plt.clim(0, 8)
+                        # plt.show()
+                        # DEBUG END
+
+                    elif domain_map_file_ancillary.endswith('workspace'):
+                        domain_map_data = read_obj(domain_map_file_ancillary)
+                    else:
+                        log_stream.error(' ===> Read selected method is not supported.')
+                        raise NotImplementedError('Case not implemented yet')
 
                     file_path_scenario_plot_info = self.define_file_scenario(
                         time_now, self.folder_name_scenario_plot_info, self.file_name_scenario_plot_info,
@@ -358,6 +376,13 @@ class DriverScenario:
                         if domain_info_fields is not None:
                             if domain_info_key in domain_description_collection:
 
+                                if self.domain_scenario_attrs_tag in list(domain_info_fields.keys()):
+                                    section_info_attrs = domain_info_fields[self.domain_scenario_attrs_tag]
+                                else:
+                                    log_stream.warning(' ===> Section attributes for "' + domain_info_key +
+                                                       '" are undefined due to time-series discharge datasets.')
+                                    section_info_attrs = {}
+
                                 domain_info_dframe = pd.DataFrame(domain_info_fields, index=domain_info_fields['time'])
 
                                 if not domain_info_dframe[domain_info_dframe.index.isin([domain_map_time])].empty:
@@ -365,14 +390,26 @@ class DriverScenario:
                                 else:
                                     section_info_fields = {}
                                     log_stream.warning(' ===> Section information for "' + domain_info_key +
-                                                    '" are undefined due to time-series discharge datasets.')
+                                                       '" are undefined due to time-series discharge datasets.')
+
+                                if isinstance(section_info_fields, dict) and isinstance(section_info_attrs, dict):
+                                    section_info_fields = {**section_info_fields, **section_info_attrs}
+                                else:
+                                    log_stream.warning(' ===> Section information and attributes for "' + domain_info_key +
+                                                       '" are undefined due to time-series discharge datasets.')
+                                    section_info_fields = {}
 
                                 if section_info_fields is not None:
                                     for section_info_key, section_info_value in section_info_fields.items():
                                         if isinstance(section_info_value, pd.Timestamp):
                                             section_tmp_value = section_info_value.strftime(time_format_algorithm)
                                             section_info_fields[section_info_key] = section_tmp_value
-
+                                        elif isinstance(section_info_value, list):
+                                           section_tmp_value = ','.join(str(elem) for elem in section_info_value)
+                                           section_info_fields[section_info_key] = section_tmp_value
+                                        elif isinstance(section_info_value, bool):
+                                            section_tmp_value = str(section_info_value)
+                                            section_info_fields[section_info_key] = section_tmp_value
                                 section_info_collection[domain_info_key] = section_info_fields
 
                     section_info_collection['scenario_name'] = domain_name_step
@@ -391,13 +428,13 @@ class DriverScenario:
                         if not os.path.exists(file_path_scenario_plot_info):
                             save_file_json(file_path_scenario_plot_info, section_info_collection)
                             log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
-                                         ' ... DONE')
+                                            ' ... DONE')
                         else:
                             log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
-                                         ' ... PREVIOUSLY SAVED')
+                                            ' ... PREVIOUSLY SAVED')
                     else:
                         log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
-                                     ' ... SKIPPED. Save method is deactivated')
+                                        ' ... SKIPPED. Save method is deactivated')
 
                     # Save information in png file
                     folder_name_scenario_plot_png, file_name_scenario_plot_png = os.path.split(
@@ -414,13 +451,13 @@ class DriverScenario:
                                           scenario_time_step_string=time_step_string,
                                           fig_color_map_type=None, fig_dpi=150)
                             log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
-                                         ' ... DONE')
+                                            ' ... DONE')
                         else:
                             log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
-                                         ' ... PREVIOUSLY SAVED')
+                                            ' ... PREVIOUSLY SAVED')
                     else:
                         log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
-                                     ' ... SKIPPED. Save method is deactivated')
+                                        ' ... SKIPPED. Save method is deactivated')
 
                     # Save information in tiff file
                     folder_name_scenario_plot_tiff, file_name_scenario_plot_tiff = os.path.split(
@@ -434,13 +471,13 @@ class DriverScenario:
                                            domain_map_data, domain_geo_x, domain_geo_y,
                                            file_epsg_code='EPSG:32632')
                             log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
-                                         ' ... DONE')
+                                            ' ... DONE')
                         else:
                             log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
-                                         ' ... PREVIOUSLY SAVED')
+                                            ' ... PREVIOUSLY SAVED')
                     else:
                         log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
-                                     ' ... SKIPPED. Save method is deactivated')
+                                        ' ... SKIPPED. Save method is deactivated')
 
                     log_stream.info(' -----> Time step "' + domain_map_time.strftime(time_format_algorithm) + '" ... DONE')
 
@@ -469,7 +506,7 @@ class DriverScenario:
 
             log_stream.info(' ----> Domain "' + domain_name_step + '" ... ')
 
-            domain_geo_data = geo_data_collection[domain_name_step]
+            domain_geo_collection = geo_data_collection[domain_name_step]
             domain_scenario_data = scenario_data_collection[domain_name_step]
             domain_section_db = geo_data_collection[domain_name_step][self.domain_sections_db_tag]
 
@@ -478,9 +515,13 @@ class DriverScenario:
             if domain_scenario_data is not None:
 
                 domain_scenario_merged_default = np.zeros(
-                    [domain_geo_data[self.domain_scenario_area_tag].shape[0],
-                     domain_geo_data[self.domain_scenario_area_tag].shape[1]])
+                    [domain_geo_collection[self.domain_scenario_area_tag].shape[0],
+                     domain_geo_collection[self.domain_scenario_area_tag].shape[1]])
                 domain_scenario_merged_default[:, :] = np.nan
+
+                domain_geo_data = domain_geo_collection[self.domain_scenario_area_tag]
+                domain_geo_x = domain_geo_collection[self.domain_scenario_grid_x_tag]
+                domain_geo_y = domain_geo_collection[self.domain_scenario_grid_y_tag]
 
                 if self.flag_cleaning_anc_scenario_info or self.flag_cleaning_anc_scenario_file or \
                         self.flag_cleaning_anc_scenario_map:
@@ -529,15 +570,15 @@ class DriverScenario:
                                     section_scenario_times = section_scenario_data[self.domain_scenario_time_tag]
                                 else:
                                     log_stream.error(' ===> Scenario frequency value "' + str(self.scenario_analysis) +
-                                                  '" is not allowed')
+                                                     '" is not allowed')
                                     log_stream.info(' -----> Section "' + section_scenario_key + '" ... FAILED')
                                     raise NotImplementedError('Case not implemented yet')
 
                                 for section_scenario_tr_cmp, section_scenario_time in zip(
                                         section_scenario_trs_cmp, section_scenario_times):
 
-                                    log_stream.info(' ------> Time step "' + section_scenario_time.strftime(time_format_algorithm) +
-                                                 '" ... ')
+                                    log_stream.info(' ------> Time step "' + section_scenario_time.strftime(
+                                        time_format_algorithm) + '" ... ')
 
                                     file_path_scenario_anc_map = self.define_file_scenario(
                                         time, self.folder_name_scenario_anc_map,
@@ -569,7 +610,8 @@ class DriverScenario:
                                     # Compare tr value with tr min
                                     if section_scenario_tr_check >= self.tr_min:
 
-                                        section_area_idx = np.argwhere(domain_geo_data[self.domain_scenario_area_tag] == section_db_n)
+                                        section_area_idx = np.argwhere(
+                                            domain_geo_collection[self.domain_scenario_area_tag] == section_db_n)
 
                                         section_scenario_tr_select = max(1, min(self.tr_max, section_scenario_tr_check))
 
@@ -600,11 +642,30 @@ class DriverScenario:
                                             folder_name, file_name = os.path.split(file_path_scenario_anc_map)
                                             make_folder(folder_name)
 
-                                            write_obj(file_path_scenario_anc_map, domain_scenario_merged_filled)
+                                            if file_path_scenario_anc_map.endswith('tiff') or \
+                                                    file_path_scenario_anc_map.endswith('tif'):
+
+                                                save_file_tiff(file_path_scenario_anc_map,
+                                                               domain_scenario_merged_filled,
+                                                               domain_geo_x, domain_geo_y,
+                                                               file_epsg_code='EPSG:32632')
+
+                                            elif file_path_scenario_anc_map.endswith('workspace'):
+                                                write_obj(file_path_scenario_anc_map, domain_scenario_merged_filled)
+                                            else:
+                                                log_stream.error(' ===> Save selected method is not supported.')
+                                                raise NotImplementedError('Case not implemented yet')
 
                                         else:
 
-                                            domain_scenario_merged_tmp = read_obj(file_path_scenario_anc_map)
+                                            if file_path_scenario_anc_map.endswith('tiff') or \
+                                                    file_path_scenario_anc_map.endswith('tif'):
+                                                domain_scenario_merged_tmp = read_file_tiff(file_path_scenario_anc_map)
+                                            elif file_path_scenario_anc_map.endswith('workspace'):
+                                                domain_scenario_merged_tmp = read_obj(file_path_scenario_anc_map)
+                                            else:
+                                                log_stream.error(' ===> Read selected method is not supported.')
+                                                raise NotImplementedError('Case not implemented yet')
 
                                             file_data_h_scenario = file_data_h[idx_x, idx_y]
 
@@ -614,28 +675,41 @@ class DriverScenario:
                                             if os.path.exists(file_path_scenario_anc_map):
                                                 os.remove(file_path_scenario_anc_map)
 
-                                            write_obj(file_path_scenario_anc_map, domain_scenario_merged_tmp)
+                                            if file_path_scenario_anc_map.endswith('tiff') or \
+                                                    file_path_scenario_anc_map.endswith('tif'):
+
+                                                save_file_tiff(file_path_scenario_anc_map,
+                                                               domain_scenario_merged_tmp,
+                                                               domain_geo_x, domain_geo_y,
+                                                               file_epsg_code='EPSG:32632')
+
+                                            elif file_path_scenario_anc_map.endswith('workspace'):
+                                                write_obj(file_path_scenario_anc_map, domain_scenario_merged_tmp)
+                                            else:
+                                                log_stream.error(' ===> Save selected method is not supported.')
+                                                raise NotImplementedError('Case not implemented yet')
 
                                         if section_scenario_time not in list(file_path_scenarios_collections.keys()):
                                             file_path_scenarios_collections[section_scenario_time] = file_path_scenario_anc_map
 
                                         log_stream.info(' ------> Time step "' +
-                                                     section_scenario_time.strftime(time_format_algorithm) + '" ... DONE')
+                                                        section_scenario_time.strftime(time_format_algorithm) +
+                                                        '" ... DONE')
 
                                     else:
                                         log_stream.info(' ------> Time step "' +
-                                                     section_scenario_time.strftime(time_format_algorithm) +
-                                                     '" ... SKIPPED. Scenarios threshold is less then minimum threshold')
+                                                        section_scenario_time.strftime(time_format_algorithm) +
+                                                        '" ... SKIPPED. Scenarios threshold is less then minimum threshold')
 
                                 log_stream.info(' -----> Section "' + section_scenario_key + '" ... DONE')
 
                             else:
                                 log_stream.info(' -----> Section "' + section_scenario_key +
-                                             '" ... SKIPPED. Section datasets are empty')
+                                                '" ... SKIPPED. Section datasets are empty')
 
                         else:
                             log_stream.info(' -----> Section "' + section_scenario_key +
-                                         '" ... SKIPPED. Section info are empty')
+                                            '" ... SKIPPED. Section info are empty')
 
                     # Save scenario maps file
                     folder_name_scenario_anc_domain_file, file_name_scenario_anc_domain_file = os.path.split(
@@ -732,6 +806,8 @@ class DriverScenario:
                                 section_discharge_value, section_type_value, \
                                 section_n_value = self.compute_scenario_discharge(
                                     section_discharge_data, section_type_data, analysis_freq=self.scenario_analysis)
+                            # Get discharge attr(s)
+                            section_discharge_attrs = section_discharge_data.attrs
 
                             # Compute tr for evaluating scenario
                             section_scenario_tr = self.compute_scenario_tr(section_discharge_idx, section_discharge_value)
@@ -742,6 +818,7 @@ class DriverScenario:
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_type_tag] = section_type_value
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_time_tag] = section_discharge_time
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_n_tag] = section_n_value
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_attrs_tag] = section_discharge_attrs
 
                             log_stream.info(' -----> Section "' + section_obj_key + '" ... DONE')
 
@@ -752,6 +829,8 @@ class DriverScenario:
                                 section_discharge_values, section_type_values, \
                                 section_n_values = self.compute_scenario_discharge(
                                     section_discharge_data, section_type_data, analysis_freq=self.scenario_analysis)
+                            # Get discharge attr(s)
+                            section_discharge_attrs = section_discharge_data.attrs
 
                             # Compute tr for evaluating scenario
                             section_scenario_trs = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
@@ -762,13 +841,14 @@ class DriverScenario:
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_type_tag] = section_type_values
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_time_tag] = section_discharge_times
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_n_tag] = section_n_values
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_attrs_tag] = section_discharge_attrs
 
                             log_stream.info(' -----> Section "' + section_obj_key + '" ... DONE')
 
                         else:
 
                             log_stream.error(' ===> Scenario frequency value "' + str(self.scenario_analysis) +
-                                          '" is not allowed')
+                                             '" is not allowed')
                             log_stream.info(' -----> Section "' + section_obj_key + '" ... FAILED')
                             raise NotImplementedError('Case not implemented yet')
 
@@ -778,7 +858,8 @@ class DriverScenario:
                         domain_scenario_workspace[section_obj_key] = None
 
                 # Save scenario information file
-                folder_name_scenario_anc_domain_info, file_name_scenario_anc_domain_info = os.path.split(file_path_scenario_anc_domain_info)
+                folder_name_scenario_anc_domain_info, file_name_scenario_anc_domain_info = os.path.split(
+                    file_path_scenario_anc_domain_info)
                 make_folder(folder_name_scenario_anc_domain_info)
                 write_obj(file_path_scenario_anc_domain_info, domain_scenario_workspace)
 
