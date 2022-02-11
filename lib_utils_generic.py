@@ -23,6 +23,13 @@ log_stream = logging.getLogger(logger_name)
 
 
 # -------------------------------------------------------------------------------------
+# Method to pad or truncate list
+def pad_or_truncate_list(some_list, target_len):
+    return some_list[:target_len] + [0]*(target_len - len(some_list))
+# -------------------------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------------------------
 # Method to reduce dictionary 2 string
 def reduce_dict_2_lists(data_dict):
     list_key, list_value = [], []

@@ -39,7 +39,8 @@ class DriverDischarge:
     # Initialize class
     def __init__(self, time_now, time_run, geo_data_collection, src_dict, anc_dict,
                  alg_ancillary=None, alg_template_tags=None,
-                 flag_discharge_data_sim='discharge_data_simulated', flag_discharge_data_obs='discharge_data_observed',
+                 flag_discharge_data_sim='discharge_data_simulated',
+                 flag_discharge_data_obs='discharge_data_observed',
                  flag_cleaning_anc_discharge_sim=True, flag_cleaning_anc_discharge_obs=True):
 
         self.time_now = time_now
@@ -54,6 +55,7 @@ class DriverDischarge:
         self.alg_template_tags = alg_template_tags
         self.file_name_tag = 'file_name'
         self.folder_name_tag = 'folder_name'
+        self.parser_tag = 'parser'
         self.variables_tag = 'variables'
         self.method_data_analysis_tag = 'method_data_analysis'
         self.method_data_filling_tag = 'method_data_filling'
@@ -89,12 +91,17 @@ class DriverDischarge:
 
         self.folder_name_discharge_sim = src_dict[self.flag_discharge_data_sim][self.folder_name_tag]
         self.file_name_discharge_sim = src_dict[self.flag_discharge_data_sim][self.file_name_tag]
-        self.variables_sim = src_dict[self.flag_discharge_data_sim][self.variables_tag]
+        self.variables_discharge_sim = src_dict[self.flag_discharge_data_sim][self.variables_tag]
+
         self.method_data_analysis_sim = src_dict[self.flag_discharge_data_sim][self.method_data_analysis_tag]
         self.method_data_filling_sim = src_dict[self.flag_discharge_data_sim][self.method_data_filling_tag]
         self.time_period_discharge_sim = src_dict[self.flag_discharge_data_sim][self.time_period_tag]
         self.time_rounding_discharge_sim = src_dict[self.flag_discharge_data_sim][self.time_rounding_tag]
         self.time_frequency_discharge_sim = src_dict[self.flag_discharge_data_sim][self.time_frequency_tag]
+        if self.parser_tag in list(src_dict[self.flag_discharge_data_sim].keys()):
+            self.file_parser_sim = src_dict[self.flag_discharge_data_sim][self.parser_tag]
+        else:
+            self.file_parser_sim = None
 
         self.folder_name_discharge_obs = src_dict[self.flag_discharge_data_obs][self.folder_name_tag]
         self.file_name_discharge_obs = src_dict[self.flag_discharge_data_obs][self.file_name_tag]
@@ -104,19 +111,43 @@ class DriverDischarge:
         self.time_period_discharge_obs = src_dict[self.flag_discharge_data_obs][self.time_period_tag]
         self.time_rounding_discharge_obs = src_dict[self.flag_discharge_data_obs][self.time_rounding_tag]
         self.time_frequency_discharge_obs = src_dict[self.flag_discharge_data_obs][self.time_frequency_tag]
+        if self.parser_tag in list(src_dict[self.flag_discharge_data_obs].keys()):
+            self.file_parser_obs = src_dict[self.flag_discharge_data_obs][self.parser_tag]
+        else:
+            self.file_parser_obs = None
+
+        self.file_prefix_sim, self.file_sep_sim, self.file_elem_sim = None, None, None
+        if self.file_parser_sim is not None:
+            self.file_prefix_sim = self.file_parser_sim['string_prefix']
+            self.file_sep_sim = self.file_parser_sim['string_sep']
+            self.file_elem_sim = self.file_parser_sim['string_element']
+
+        self.file_prefix_obs, self.file_sep_obs, self.file_elem_obs = None, None, None
+        if self.file_parser_obs is not None:
+            self.file_prefix_obs = self.file_parser_obs['string_prefix']
+            self.file_sep_obs = self.file_parser_obs['string_sep']
+            self.file_elem_obs = self.file_parser_obs['string_element']
 
         self.format_group = '{:02d}'
-        self.file_path_discharge_sim = self.define_file_discharge(
-            self.time_run, self.folder_name_discharge_sim, self.file_name_discharge_sim)
+        if (self.folder_name_discharge_sim is not None) and (self.file_name_discharge_sim is not None):
+            self.file_path_discharge_sim = self.define_file_discharge(
+                self.time_run, self.folder_name_discharge_sim, self.file_name_discharge_sim,
+                file_name_prefix=self.file_prefix_sim, file_name_elem=self.file_elem_sim,
+                file_name_sep=self.file_sep_sim)
+        else:
+            log_stream.error(' ===> Source files of "overland_flow" are not defined ')
+            raise IOError('Overflow datasets is needed by the application.')
 
         self.file_path_discharge_obs = self.define_file_discharge(
             self.time_run, self.folder_name_discharge_obs, self.file_name_discharge_obs,
+            file_name_prefix=self.file_prefix_obs, file_name_elem=self.file_elem_obs, file_name_sep=self.file_sep_obs,
             extra_args={'section_name_obj': self.domain_hydro_dict,
                         'time_rounding': self.time_rounding_discharge_obs,
                         'time_frequency': self.time_frequency_discharge_obs,
                         'time_period': self.time_period_discharge_obs})
 
-        self.var_time_sim, self.var_discharge_sim, self.var_wlevel_sim = self.define_file_variables(self.variables_sim)
+        self.var_time_dischargesim, self.var_discharge_discharge_sim, \
+            self.var_wlevel_discharge_sim = self.define_file_variables(self.variables_discharge_sim)
         self.var_time_obs, self.var_discharge_obs, self.var_wlevel_obs = self.define_file_variables(self.variables_obs)
 
         self.freq_discharge = 'H'
@@ -204,6 +235,7 @@ class DriverDischarge:
     # -------------------------------------------------------------------------------------
     # Method to define discharge filename
     def define_file_discharge(self, time, folder_name_raw, file_name_raw,
+                              file_name_prefix='idro', file_name_suffix=None, file_name_sep='_', file_name_elem=3,
                               file_sort_descending=True, extra_args=None):
 
         alg_template_tags = self.alg_template_tags
@@ -265,7 +297,35 @@ class DriverDischarge:
 
                     file_path_def = os.path.join(folder_name_def, file_name_def)
 
-                    section_path_obj = glob.glob(file_path_def)
+                    section_path_found = glob.glob(file_path_def)
+                    if file_name_elem is not None:
+                        section_path_obj = []
+                        for section_path_step in section_path_found:
+                            folder_name_step, file_name_step = os.path.split(section_path_step)
+                            if (file_name_prefix is not None) and (file_name_suffix is None):
+                                if file_name_step.startswith(file_name_prefix):
+
+                                    prefix_check = False
+                                    file_name_parts = file_name_step.split(file_name_sep)
+                                    file_prefix_parts = file_name_prefix.split(file_name_sep)
+                                    if file_name_parts.__len__() == file_name_elem:
+                                        for prefix_id, prefix_step in enumerate(file_prefix_parts):
+                                            if prefix_step == file_name_parts[prefix_id]:
+                                                prefix_check = True
+                                            else:
+                                                prefix_check = False
+                                                break
+                                        if prefix_check:
+                                            section_path_obj.append(section_path_step)
+
+                            elif (file_name_suffix is not None) and (file_name_prefix is None):
+                                if file_name_step.endswith(file_name_suffix):
+                                    section_path_obj.append(section_path_step)
+                            else:
+                                log_stream.error(' ===> Filter using "prefix" and "suffix" is not supported ')
+                                raise NotImplementedError('Case not implemented yet')
+                    else:
+                        section_path_obj = deepcopy(section_path_found)
 
                     if not section_path_obj:
 
@@ -626,9 +686,9 @@ class DriverDischarge:
                         section_id = None
 
                     log_stream.info(' -----> Section "' + section_description + '" ... ')
-
                     if section_id is not None:
                         if section_id in list(file_path_discharge.keys()):
+
                             section_file_path_list = file_path_discharge[section_id]
 
                             if section_file_path_list:
@@ -649,19 +709,17 @@ class DriverDischarge:
                                     section_dframe[section_file_tag] = section_ts
 
                                 section_workspace[section_description] = section_dframe
-
-                                log_stream.info(
-                                    ' -----> Section "' + section_description + '" ... DONE')
+                                log_stream.info(' -----> Section "' + section_description +
+                                                '" ... DONE')
 
                             else:
-                                log_stream.info(
-                                    ' -----> Section "' + section_description + '" ... SKIPPED. Datasets are empty')
                                 section_workspace[section_description] = None
-
+                                log_stream.info(' -----> Section "' + section_description +
+                                                '" ... SKIPPED. Datasets are empty')
                         else:
-                            log_stream.info(
-                                ' -----> Section "' + section_description + '" ... SKIPPED. File are not available')
                             section_workspace[section_description] = None
+                            log_stream.info(' -----> Section "' + section_description +
+                                            '" ... SKIPPED. File are not available')
                     else:
                         log_stream.info(
                             ' -----> Section "' + section_description + '" ... SKIPPED. Domain are not available')
@@ -869,6 +927,9 @@ class DriverDischarge:
 
                                     if section_file_path_step:
                                         if isinstance(section_file_path_step, list) and (section_file_path_step.__len__() == 1):
+                                            section_file_path_step = section_file_path_step[0]
+                                        elif isinstance(section_file_path_step, list) and (section_file_path_step.__len__() > 1):
+                                            section_file_path_step = sorted(section_file_path_step)[::-1]
                                             section_file_path_step = section_file_path_step[0]
                                         else:
                                             log_stream.error(' ===> File path obj not in supported format')

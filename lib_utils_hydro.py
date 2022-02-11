@@ -196,9 +196,21 @@ def parse_file_parts(file_name, file_type='sim'):
 def read_file_hydro_sim(section_name, file_name, column_time_idx=0, method_data_filling='ffill'):
 
     file_data = pd.read_table(file_name)
+    file_data = file_data.loc[:, ~file_data.columns.str.match("Unnamed")]
 
-    file_cols_tmp = list(file_data.columns)[0].split(' ')
-    file_cols_filtered = list(filter(None, file_cols_tmp))
+    file_columns = list(file_data.columns)
+    if isinstance(file_columns, list):
+        if file_columns.__len__() == 1:
+            file_cols_tmp = file_columns[0].split(' ')
+            file_cols_filtered = list(filter(None, file_cols_tmp))
+        elif file_columns.__len__() > 1:
+            file_cols_filtered = deepcopy(file_columns)
+        else:
+            log_stream.error(' ===> File columns dimension is not allowed')
+            raise NotImplementedError('Case not implemented yet')
+    else:
+        log_stream.error(' ===> File column format is not supported')
+        raise NotImplementedError('Case not implemented yet')
 
     if section_name in file_cols_filtered:
 
@@ -208,13 +220,23 @@ def read_file_hydro_sim(section_name, file_name, column_time_idx=0, method_data_
         section_period = []
         section_data = []
         for file_data_row in file_data_table:
-            file_data_parts = list(file_data_row)[0].split(' ')
-            file_data_parts = list(filter(None, file_data_parts))
 
-            section_time = pd.Timestamp(file_data_parts[column_time_idx])
+            file_row = list(file_data_row)
+            if file_columns.__len__() == 1:
+                file_data_parts = file_data_row[0].split(' ')
+                file_data_parts = list(filter(None, file_data_parts))
+            elif file_columns.__len__() > 1:
+                file_data_parts = deepcopy(file_row)
+            else:
+                log_stream.error(' ===> File row dimension is not allowed')
+                raise NotImplementedError('Case not implemented yet')
+
+            section_time_string = str(int(file_data_parts[column_time_idx]))
             section_point = float(file_data_parts[column_section_idx])
 
-            section_period.append(section_time)
+            section_time_stamp = pd.Timestamp(section_time_string)
+
+            section_period.append(section_time_stamp)
             section_data.append(section_point)
 
         section_series = pd.Series(index=section_period, data=section_data)

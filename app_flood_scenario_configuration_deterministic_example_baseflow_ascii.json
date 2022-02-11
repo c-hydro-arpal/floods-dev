@@ -1,0 +1,183 @@
+{
+  "algorithm": {
+    "general": {
+      "title": "Floods - Scenarios",
+      "web-site": "",
+      "source": "Python application developed by CIMA Research Foundation",
+      "history": "1.8.0 [20220201]",
+      "project-info": "floods",
+      "algorithm": ""
+    },
+    "flags": {
+      "cleaning_static_data": false,
+      "cleaning_dynamic_data_discharge_obs": true,
+      "cleaning_dynamic_data_discharge_sim": true,
+      "cleaning_dynamic_data_scenario_info": true,
+      "cleaning_dynamic_data_scenario_file": false,
+      "cleaning_dynamic_data_scenario_maps": false,
+      "cleaning_dynamic_plot": true
+    },
+    "ancillary": {
+      "__comment__": "scenario_analysis: [max_period, all_period], scenario_type: [observed, simulated, mixed], scenario_method: [max]",
+      "domain_name" : ["EntellaCompleto"],
+      "tr_min" : 1,
+      "tr_max" : 500,
+      "tr_freq": 1,
+      "drift_group": 6,
+      "scenario_boundary": "both",
+      "scenario_analysis": "all_period",
+      "scenario_type": "mixed"
+    },
+    "template": {
+      "tr": "string_tr",
+      "section_name": "string_section",
+      "domain_name": "string_domain",
+      "drift_group": "string_group",
+      "mask_discharge" : "string_mask",
+      "scenario_discharge" : "string_discharge",
+      "source_sub_path_time_discharge_sim": "%Y%m%d",
+      "source_datetime_to_discharge_sim": "%y%j",
+      "source_datetime_from_discharge_sim": "%y",
+      "source_sub_path_time_discharge_obs": "%Y%m%d",
+      "source_datetime_to_discharge_obs": "%Y%m%d*",
+      "source_datetime_from_discharge_obs": "%Y%m%d%H%M",
+      "ancillary_sub_path_time_discharge": "%Y%m%d",
+      "ancillary_datetime_discharge": "%Y%m%d%H%M",
+      "ancillary_sub_path_time_scenario": "%Y/%m/%d/",
+      "ancillary_datetime_scenario": "%Y%m%d%H%M",
+      "destination_sub_path_time_scenario": "%Y/%m/%d/",
+      "destination_datetime_scenario": "%Y%m%d%H%M"
+    }
+  },
+  "data": {
+    "static" : {
+      "source" : {
+        "geo_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/geo_data/",
+          "file_name": "Data_LiguriaDomain.mat"
+        },
+        "telemac_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/telemac_data/{domain_name}_15112021/",
+          "file_name": "{domain_name}_WD_max_Q{tr}.tif"
+        },
+        "hazard_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/hazard_data/{domain_name}_15112021/",
+          "file_name": "{domain_name}_hazmap_T{tr}.mat"
+        },
+        "drainage_area_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/telemac_data/{domain_name}_15112021/",
+          "file_name": "Aree_finali_{domain_name}.mat"
+        },
+        "drift_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/drift_data/",
+          "file_name": "info_gruppo_{drift_group}RADAR_horton.dat"
+        },
+        "section_data": {
+          "registry" : {
+            "__comment__": "anagrafic precedente: anagrafica_sezioni_DRiFt.csv",
+            "folder_name": "/home/fabio/Desktop/PyCharm_ARPAL/floods-ws/data_static/section_data/",
+            "file_name": "SezioniLiguriaRegistry.csv"
+          },
+          "river_station_lut": {
+            "__comment__": "lut precedente: CODICI_SEZIONE_IDROMETRO_DT.txt",
+            "folder_name": null,
+            "file_name": null
+          },
+          "fields": {
+            "__comment__": "fields precedente: section_fields_v1.json",
+            "folder_name": "/home/fabio/Desktop/PyCharm_ARPAL/floods-ws/data_static/section_data/",
+            "file_name": "section_fields_v2.json"
+          }
+        },
+        "info_data": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/domain_data/",
+          "file_name": "info_{domain_name}.json"
+        }
+      },
+      "destination": {
+        "domain_collection": {
+          "__comment__" : "aree di competenza in formato .mat",
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/domain_data/",
+          "file_name": "info_{domain_name}.workspace"
+        }
+      }
+    },
+    "dynamic": {
+      "source": {
+        "discharge_data_simulated": {
+          "_comment" : "file_name_string: [idro_{source_datetime_from_discharge_sim}_{source_datetime_to_discharge_sim}{mask_discharge}.txt]",
+          "folder_name": "/home/fabio/Desktop/PyCharm_ARPAL/floods-ws/data_dynamic/source/run_osservato_pluviometri/{source_sub_path_time_discharge_sim}",
+          "file_name": "idro_baseflow_{source_datetime_from_discharge_sim}_{source_datetime_to_discharge_sim}{mask_discharge}.txt",
+          "parser": {"string_prefix": "idro_baseflow", "string_sep": "_", "string_element": 4},
+          "variables": {"time": "a1sDateVet", "discharge": "a1dQSim", "water_level": null},
+          "method_data_analysis" : "max",
+          "method_data_filling": null,
+          "time_period": 48,
+          "time_frequency": "H",
+          "time_rounding": "D"
+        },
+        "discharge_data_observed": {
+          "__comment__": "mat_file: {section_name}_{source_datetime_from_discharge_obs}_{source_datetime_to_discharge_obs}_1H.mat",
+          "folder_name": "/home/fabio/Desktop/PyCharm_ARPAL/floods-ws/data_dynamic/source/LivelliPortateOsservate/{source_sub_path_time_discharge_obs}/",
+          "file_name": "LivelloPortate_{section_name}_{source_datetime_from_discharge_obs}_{source_datetime_to_discharge_obs}.txt",
+          "parser": null,
+          "variables": {"time":  "a1sDateVet", "discharge":  "a1dQOssMean", "water_level": "a1dLivOssMean" },
+          "method_data_analysis" : null,
+          "method_data_filling": "interpolate",
+          "time_period": 48,
+          "time_frequency": "H",
+          "time_rounding": "D"
+        }
+      },
+      "ancillary": {
+        "discharge_data_simulated": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/discharge_run_obs_ws/{ancillary_sub_path_time_discharge}/",
+          "file_name": "discharge_{domain_name}_{ancillary_datetime_discharge}_simulated.workspace"
+        },
+        "discharge_data_observed": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/discharge_run_obs_ws/{ancillary_sub_path_time_discharge}/",
+          "file_name": "discharge_{domain_name}_{ancillary_datetime_discharge}_observed.workspace"
+        },
+        "scenario_data_info": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/scenario_run_obs_ws/{ancillary_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_info.workspace"
+        },
+        "scenario_data_file": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/scenario_run_obs_ws/{ancillary_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_file.workspace"
+        },
+        "scenario_data_map": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/ancillary/scenario_run_obs_ws/{ancillary_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{ancillary_datetime_scenario}_map.tiff"
+        }
+      },
+      "destination" : {
+        "scenario_plot_tiff": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.tiff",
+          "save_status": true
+        },
+        "scenario_plot_png": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.png",
+          "save_status": false
+        },
+        "scenario_plot_info": {
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.json",
+          "save_status": true
+        }
+      }
+    }
+  },
+  "log": {
+    "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/log/",
+    "file_name": "arpal_flood_log_run_obs_ws.txt"
+  },
+  "time": {
+    "time_now": null,
+    "time_period": 1,
+    "time_frequency": "D",
+    "time_rounding": "D"
+  }
+}
