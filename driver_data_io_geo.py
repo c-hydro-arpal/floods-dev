@@ -347,7 +347,9 @@ class DriverGeo:
     # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------
-    def get_domain_link(self, domain_info):
+    # Method to define upstream and downstream link(s)
+    @staticmethod
+    def get_domain_link(domain_info):
 
         section_drainage_area_tags = ['section_drainage_area', 'drainage_area']
 

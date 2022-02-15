@@ -18,7 +18,7 @@ python3 app_flood_scenario_main.py -settings_file configuration.json -time "YYYY
 
 Version(s):
 20220201 (1.8.0) --> Pre-operational release
-20211005 (1.7.0) --> Generic release fpr correcting bugs and managing the empty datasets for obs/mod discharges
+20211005 (1.7.0) --> Generic release for correcting bugs and managing the empty datasets for obs/mod discharges
 20210515 (1.6.0) --> Generic release for updating tools and modules
 20201214 (1.5.0) --> Test release
 20200522 (1.0.0) --> Beta release

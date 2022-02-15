@@ -22,6 +22,7 @@ from lib_utils_io import read_obj, write_obj
 from lib_utils_system import fill_tags2string, make_folder
 from lib_utils_generic import get_dict_value, reduce_dict_2_lists
 from lib_utils_plot import save_file_tiff, save_file_png, save_file_json, read_file_tiff
+from lib_utils_tr import cmp_tr_exp, cmp_tr_linear
 
 from lib_info_args import logger_name, time_format_algorithm
 
@@ -74,6 +75,10 @@ class DriverScenario:
 
         self.scenario_analysis = alg_ancillary['scenario_analysis']
         self.scenario_type = alg_ancillary['scenario_type']
+        if 'scenario_tiling' in list(alg_ancillary.keys()):
+            self.scenario_tiling = alg_ancillary['scenario_tiling']
+        else:
+            self.scenario_tiling = 'rounded'
 
         self.alg_template_tags = alg_template_tags
         self.file_name_tag = 'file_name'
@@ -133,6 +138,10 @@ class DriverScenario:
         self.domain_sections_db_tag = 'domain_sections_db'
 
         self.domain_scenario_index_tag = 'scenario_idx'
+        self.domain_scenario_index_right_tag = 'scenario_idx_right'
+        self.domain_scenario_index_left_tag = 'scenario_idx_left'
+        self.domain_scenario_weight_right_tag = 'scenario_weight_right'
+        self.domain_scenario_weight_left_tag = 'scenario_weight_left'
         self.domain_scenario_discharge_tag = 'discharge_value'
         self.domain_scenario_type_tag = 'type_value'
         self.domain_scenario_time_tag = 'time'
@@ -154,6 +163,8 @@ class DriverScenario:
         self.var_name_discharge = 'discharge'
         self.var_name_water_level = 'water_level'
         self.var_name_type = 'type'
+
+        self.correction_discharge_factor = 1.16
         # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------
@@ -185,8 +196,7 @@ class DriverScenario:
 
     # -------------------------------------------------------------------------------------
     # Method to compute tr for evaluating scenario
-    @staticmethod
-    def compute_scenario_tr(section_discharge_idx, section_discharge_values):
+    def compute_scenario_tr(self, section_discharge_idx, section_discharge_values):
 
         if not isinstance(section_discharge_values, list):
             section_discharge_values = [section_discharge_values]
@@ -194,20 +204,48 @@ class DriverScenario:
         if section_discharge_idx > 0.0:
 
             section_scenario_trs = []
+            section_scenario_trs_right, section_scenario_trs_left = [], []
+            section_scenario_weights_right, section_scenario_weights_left = [], []
             for section_discharge_value in section_discharge_values:
 
                 if section_discharge_value >= 0.0:
-                    section_scenario_tr = np.round(np.exp(
-                        (section_discharge_idx * 0.5239 + section_discharge_value) / (section_discharge_idx * 1.0433)))
-                    section_scenario_tr = int(section_scenario_tr)
+
+                    if section_discharge_value >= section_discharge_idx * 1.16:
+                        section_scenario_tr_rounded, \
+                            section_scenario_tr_right, section_scenario_tr_left, \
+                            section_scenario_weight_right, section_scenario_weight_left = cmp_tr_exp(
+                                section_discharge_idx, section_discharge_value)
+                    else:
+                        section_scenario_tr_rounded, \
+                            section_scenario_tr_right, section_scenario_tr_left, \
+                            section_scenario_weight_right, section_scenario_weight_left = cmp_tr_linear(
+                                section_discharge_idx, section_discharge_value,
+                                section_discharge_factor=self.correction_discharge_factor)
+
+                    section_scenario_tr = int(section_scenario_tr_rounded)
+                    section_scenario_tr_right = int(section_scenario_tr_right)
+                    section_scenario_tr_left = int(section_scenario_tr_left)
+
                 else:
                     section_scenario_tr = np.nan
+                    section_scenario_tr_right, section_scenario_tr_left = np.nan, np.nan
+                    section_scenario_weight_right, section_scenario_weight_left = np.nan, np.nan
 
                 section_scenario_trs.append(section_scenario_tr)
+                section_scenario_trs_right.append(section_scenario_tr_right)
+                section_scenario_trs_left.append(section_scenario_tr_left)
+                section_scenario_weights_right.append(section_scenario_weight_right)
+                section_scenario_weights_left.append(section_scenario_weight_left)
         else:
             section_scenario_trs = [np.nan] * section_discharge_values.__len__()
+            section_scenario_trs_right = [np.nan] * section_discharge_values.__len__()
+            section_scenario_trs_left = [np.nan] * section_discharge_values.__len__()
+            section_scenario_weights_right = [np.nan] * section_discharge_values.__len__()
+            section_scenario_weights_left = [np.nan] * section_discharge_values.__len__()
 
-        return section_scenario_trs
+        return section_scenario_trs, section_scenario_trs_right, section_scenario_trs_left, \
+            section_scenario_weights_right, section_scenario_weights_left
+
     # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------
@@ -564,6 +602,11 @@ class DriverScenario:
                             if section_scenario_data is not None:
 
                                 section_scenario_trs_cmp = section_scenario_data[self.domain_scenario_index_tag]
+                                section_scenario_trs_right = section_scenario_data[self.domain_scenario_index_right_tag]
+                                section_scenario_trs_left = section_scenario_data[self.domain_scenario_index_left_tag]
+                                section_scenario_wgs_right = section_scenario_data[self.domain_scenario_weight_right_tag]
+                                section_scenario_wgs_left = section_scenario_data[self.domain_scenario_weight_left_tag]
+
                                 if self.scenario_analysis == 'max_period':
                                     section_scenario_times = [time]
                                 elif self.scenario_analysis == 'all_period':
@@ -574,8 +617,13 @@ class DriverScenario:
                                     log_stream.info(' -----> Section "' + section_scenario_key + '" ... FAILED')
                                     raise NotImplementedError('Case not implemented yet')
 
-                                for section_scenario_tr_cmp, section_scenario_time in zip(
-                                        section_scenario_trs_cmp, section_scenario_times):
+                                for id_scenario_time, section_scenario_time in enumerate(section_scenario_times):
+
+                                    section_scenario_tr_cmp = section_scenario_trs_cmp[id_scenario_time]
+                                    section_scenario_tr_right = section_scenario_trs_right[id_scenario_time]
+                                    section_scenario_tr_left = section_scenario_trs_left[id_scenario_time]
+                                    section_scenario_wg_right = section_scenario_wgs_right[id_scenario_time]
+                                    section_scenario_wg_left = section_scenario_wgs_left[id_scenario_time]
 
                                     log_stream.info(' ------> Time step "' + section_scenario_time.strftime(
                                         time_format_algorithm) + '" ... ')
@@ -601,11 +649,23 @@ class DriverScenario:
 
                                     # Find tr value
                                     if np.isnan(section_scenario_tr_cmp):
+
                                         section_scenario_tr_other = get_dict_value(
-                                            domain_scenario_data,self.domain_scenario_index_tag, [])
+                                            domain_scenario_data, self.domain_scenario_index_tag, [])
                                         section_scenario_tr_check = int(np.nanmax(section_scenario_tr_other))
+                                        section_scenario_tr_right_check = deepcopy(section_scenario_tr_check)
+                                        section_scenario_tr_left_check = deepcopy(section_scenario_tr_check)
+                                        section_scenario_wg_right_check, section_scenario_wg_left_check = 1.0, 1.0
+
+                                        log_stream.warning(' ===> Scenario tr is undefined for section "' +
+                                                           section_db_description + '". Check the datasets')
+
                                     else:
                                         section_scenario_tr_check = section_scenario_tr_cmp
+                                        section_scenario_tr_right_check = section_scenario_tr_right
+                                        section_scenario_tr_left_check = section_scenario_tr_left
+                                        section_scenario_wg_right_check = section_scenario_wg_right
+                                        section_scenario_wg_left_check = section_scenario_wg_left
 
                                     # Compare tr value with tr min
                                     if section_scenario_tr_check >= self.tr_min:
@@ -614,18 +674,55 @@ class DriverScenario:
                                             domain_geo_collection[self.domain_scenario_area_tag] == section_db_n)
 
                                         section_scenario_tr_select = max(1, min(self.tr_max, section_scenario_tr_check))
+                                        section_scenario_tr_right_select = max(1, min(self.tr_max, section_scenario_tr_right_check))
+                                        section_scenario_tr_left_select = max(1, min(self.tr_max, section_scenario_tr_left_check))
 
-                                        file_path_hazard = self.define_file_hazard(
-                                            self.folder_name_hazard, self.file_name_hazard,
-                                            domain_name_step, section_scenario_tr_select)
+                                        if self.scenario_tiling == 'rounded':
 
-                                        file_data_hazard = read_file_hazard(
-                                            file_path_hazard,
-                                            file_vars=[self.domain_scenario_hazard_name],
-                                            file_format=[self.domain_scenario_hazard_format],
-                                            file_scale_factor=[self.domain_scenario_hazard_scale_factor])
+                                            file_path_hazard = self.define_file_hazard(
+                                                self.folder_name_hazard, self.file_name_hazard,
+                                                domain_name_step, section_scenario_tr_select)
 
-                                        file_data_h = file_data_hazard[self.domain_scenario_hazard_name]
+                                            file_data_hazard = read_file_hazard(
+                                                file_path_hazard,
+                                                file_vars=[self.domain_scenario_hazard_name],
+                                                file_format=[self.domain_scenario_hazard_format],
+                                                file_scale_factor=[self.domain_scenario_hazard_scale_factor])
+
+                                            file_data_h = file_data_hazard[self.domain_scenario_hazard_name]
+
+                                        elif self.scenario_tiling == 'weighted':
+
+                                            file_path_hazard_right = self.define_file_hazard(
+                                                self.folder_name_hazard, self.file_name_hazard,
+                                                domain_name_step, section_scenario_tr_right_select)
+                                            file_path_hazard_left = self.define_file_hazard(
+                                                self.folder_name_hazard, self.file_name_hazard,
+                                                domain_name_step, section_scenario_tr_left_select)
+
+                                            file_data_hazard_right = read_file_hazard(
+                                                file_path_hazard_right,
+                                                file_vars=[self.domain_scenario_hazard_name],
+                                                file_format=[self.domain_scenario_hazard_format],
+                                                file_scale_factor=[self.domain_scenario_hazard_scale_factor])
+                                            file_data_hazard_left = read_file_hazard(
+                                                file_path_hazard_left,
+                                                file_vars=[self.domain_scenario_hazard_name],
+                                                file_format=[self.domain_scenario_hazard_format],
+                                                file_scale_factor=[self.domain_scenario_hazard_scale_factor])
+
+                                            file_data_h_right = file_data_hazard_right[self.domain_scenario_hazard_name]
+                                            file_data_h_left = file_data_hazard_left[self.domain_scenario_hazard_name]
+
+                                            file_data_h = (file_data_h_right * section_scenario_wg_right_check +
+                                                           file_data_h_left * section_scenario_wg_left_check) / 2
+
+                                            file_data_h[file_data_h < 0.0] = 0.0
+
+                                        else:
+                                            log_stream.info(' ===> Scenario tiling method "' +
+                                                            self.scenario_tiling + '" is not supported')
+                                            raise NotImplementedError('Case not implemented yet')
 
                                         idx_x = section_area_idx[:, 0]
                                         idx_y = section_area_idx[:, 1]
@@ -810,16 +907,22 @@ class DriverScenario:
                             section_discharge_attrs = section_discharge_data.attrs
 
                             # Compute tr for evaluating scenario
-                            section_scenario_tr = self.compute_scenario_tr(section_discharge_idx, section_discharge_value)
+                            section_scenario_trs,\
+                                section_scenario_trs_right, section_scenario_trs_left, \
+                                section_scenario_weights_right, section_scenario_weights_left\
+                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
 
                             domain_scenario_workspace[section_obj_key] = {}
-                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_tr
-                            domain_scenario_workspace[section_obj_key][self.domain_scenario_discharge_tag] = section_discharge_value
-                            domain_scenario_workspace[section_obj_key][self.domain_scenario_type_tag] = section_type_value
-                            domain_scenario_workspace[section_obj_key][self.domain_scenario_time_tag] = section_discharge_time
-                            domain_scenario_workspace[section_obj_key][self.domain_scenario_n_tag] = section_n_value
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_right_tag] = section_scenario_trs_right
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_left_tag] = section_scenario_trs_left
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_weight_right_tag] = section_scenario_weights_right
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_weight_left_tag] = section_scenario_weights_left
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_discharge_tag] = section_discharge_values
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_type_tag] = section_type_values
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_time_tag] = section_discharge_times
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_n_tag] = section_n_values
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_attrs_tag] = section_discharge_attrs
-
                             log_stream.info(' -----> Section "' + section_obj_key + '" ... DONE')
 
                         elif self.scenario_analysis == 'all_period':
@@ -833,10 +936,17 @@ class DriverScenario:
                             section_discharge_attrs = section_discharge_data.attrs
 
                             # Compute tr for evaluating scenario
-                            section_scenario_trs = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
+                            section_scenario_trs,\
+                                section_scenario_trs_right, section_scenario_trs_left, \
+                                section_scenario_weights_right, section_scenario_weights_left\
+                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
 
                             domain_scenario_workspace[section_obj_key] = {}
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_right_tag] = section_scenario_trs_right
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_index_left_tag] = section_scenario_trs_left
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_weight_right_tag] = section_scenario_weights_right
+                            domain_scenario_workspace[section_obj_key][self.domain_scenario_weight_left_tag] = section_scenario_weights_left
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_discharge_tag] = section_discharge_values
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_type_tag] = section_type_values
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_time_tag] = section_discharge_times
