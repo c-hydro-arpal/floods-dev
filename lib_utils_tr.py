@@ -49,6 +49,7 @@ def cmp_tr_linear(section_discharge_idx, section_discharge_value, section_discha
 
     points_coords = [(section_discharge_idx_min, section_scenario_tr_min),
                      (section_discharge_idx_max, section_scenario_tr_max)]
+
     points_x, points_y = zip(*points_coords)
     line_a = np.vstack([points_x, np.ones(len(points_x))]).T
 

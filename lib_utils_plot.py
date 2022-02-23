@@ -10,16 +10,12 @@ Version:       '1.0.0'
 #######################################################################################
 # Libraries
 import logging
-import json
 import cartopy
 import rasterio
 import numpy as np
-import pandas as pd
 
-from lib_utils_io import write_file_tif, read_file_tif
+from lib_utils_io import write_file_tif, read_file_tif, save_file_json
 from lib_utils_colormap import load
-
-from copy import deepcopy
 
 import matplotlib.pylab as plt
 import matplotlib.ticker as mticker
@@ -39,6 +35,13 @@ from lib_info_args import logger_name
 # Logging
 log_stream = logging.getLogger(logger_name)
 #######################################################################################
+
+
+# -------------------------------------------------------------------------------------
+# Method to save info data in json format
+def save_file_info(file_name, file_data_collections):
+    save_file_json(file_name, file_data_dict=file_data_collections)
+# -------------------------------------------------------------------------------------
 
 
 # -------------------------------------------------------------------------------------
@@ -146,41 +149,4 @@ def save_file_png(file_name, file_data, file_geo_x, file_geo_y,
     plt.show()
     plt.close()
 
-# -------------------------------------------------------------------------------------
-
-
-# -------------------------------------------------------------------------------------
-# Method to save data info in json format
-def save_file_json(file_name, file_data_dict, file_indent=4, file_sep=','):
-
-    file_data_json = {}
-    for file_key, file_value in file_data_dict.items():
-        if isinstance(file_value, list):
-            file_value = [str(i) for i in file_value]
-            file_value = file_sep.join(file_value)
-        elif isinstance(file_value, (int, float)):
-            file_value = str(file_value)
-        elif isinstance(file_value, str):
-            pass
-        elif isinstance(file_value, dict):
-            file_tmp = {}
-            for value_key, value_data in file_value.items():
-                if isinstance(value_data, np.datetime64):
-                    time_stamp = pd.to_datetime(str(value_data))
-                    time_str = time_stamp.strftime('%Y-%m-%d %H:%M')
-                    file_tmp[value_key] = time_str
-                else:
-                    file_tmp[value_key] = value_data
-            file_value = deepcopy(file_tmp)
-        else:
-            logging.error(' ===> Error in getting datasets')
-            raise RuntimeError('Datasets case not implemented yet')
-
-        file_data_json[file_key] = file_value
-
-    file_data = json.dumps(file_data_json, indent=file_indent, ensure_ascii=False, sort_keys=True)
-    with open(file_name, "w", encoding='utf-8') as file_handle:
-        file_handle.write(file_data)
-
-    pass
 # -------------------------------------------------------------------------------------

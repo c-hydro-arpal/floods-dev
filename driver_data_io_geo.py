@@ -264,7 +264,7 @@ class DriverGeo:
             for domain_section_id, domain_section_fields in domain_section_db.items():
 
                 domain_name = domain_section_fields['name_point_outlet']
-                domain_idx = domain_section_fields['idx']
+                domain_idx = domain_section_fields['idx_data_terrain']
 
                 if domain_name in list(self.data_hydro.keys()):
                     domain_section_group = self.data_hydro[domain_name]

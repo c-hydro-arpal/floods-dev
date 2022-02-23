@@ -2,8 +2,8 @@
 """
 FLOODS - Scenario Application
 
-__date__ = '20220201'
-__version__ = '1.8.0'
+__date__ = '20220223'
+__version__ = '1.9.0'
 __author__ =
         'Fabio Delogu (fabio.delogu@cimafoundation.org)',
         'Flavio Pignone (flavio.pignone@cimafoundation.org)',
@@ -17,6 +17,7 @@ General command line:
 python3 app_flood_scenario_main.py -settings_file configuration.json -time "YYYY-MM-DD HH:MM"
 
 Version(s):
+20220223 (1.9.0) --> Bugs fixing and code updating based on pre-operational release
 20220201 (1.8.0) --> Pre-operational release
 20211005 (1.7.0) --> Generic release for correcting bugs and managing the empty datasets for obs/mod discharges
 20210515 (1.6.0) --> Generic release for updating tools and modules
@@ -47,8 +48,8 @@ log_stream = logging.getLogger(logger_name)
 
 # -------------------------------------------------------------------------------------
 # Algorithm information
-alg_version = '1.8.0'
-alg_release = '2022-02-01'
+alg_version = '1.9.0'
+alg_release = '2022-02-23'
 alg_name = 'FLOODS - Scenario Application'
 # -------------------------------------------------------------------------------------
 
@@ -119,8 +120,8 @@ def main():
             anc_dict=data_settings['data']['dynamic']['ancillary'],
             alg_ancillary=data_settings['algorithm']['ancillary'],
             alg_template_tags=data_settings['algorithm']['template'],
-            flag_cleaning_anc_discharge_obs=data_settings['algorithm']['flags']['cleaning_dynamic_data_discharge_obs'],
-            flag_cleaning_anc_discharge_sim=data_settings['algorithm']['flags']['cleaning_dynamic_data_discharge_sim'])
+            flag_cleaning_anc_discharge_obs=data_settings['algorithm']['flags']['cleaning_ancillary_data_discharge_obs'],
+            flag_cleaning_anc_discharge_sim=data_settings['algorithm']['flags']['cleaning_ancillary_data_discharge_sim'])
         discharge_data_collection = driver_data_source_discharge.organize_discharge()
 
         # Scenario datasets
@@ -134,14 +135,17 @@ def main():
             dst_dict=data_settings['data']['dynamic']['destination'],
             alg_ancillary=data_settings['algorithm']['ancillary'],
             alg_template_tags=data_settings['algorithm']['template'],
-            flag_cleaning_anc_scenario_info=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_info'],
-            flag_cleaning_anc_scenario_file=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_file'],
-            flag_cleaning_anc_scenario_map=data_settings['algorithm']['flags']['cleaning_dynamic_data_scenario_maps'],
-            flag_cleaning_plot_scenario=data_settings['algorithm']['flags']['cleaning_dynamic_plot']
+            flag_cleaning_anc_scenario_info=data_settings['algorithm']['flags']['cleaning_ancillary_data_scenario_info'],
+            flag_cleaning_anc_scenario_file=data_settings['algorithm']['flags']['cleaning_ancillary_data_scenario_file'],
+            flag_cleaning_anc_scenario_map=data_settings['algorithm']['flags']['cleaning_ancillary_data_scenario_maps'],
+            flag_cleaning_plot_scenario=data_settings['algorithm']['flags']['cleaning_dynamic_plot'],
+            flag_cleaning_data_scenario=data_settings['algorithm']['flags']['cleaning_dynamic_data']
         )
         scenario_info_collection = driver_data_destination_scenario.organize_scenario_datasets()
-        scenario_map_collection = driver_data_destination_scenario.compute_scenario_map(scenario_info_collection)
-        driver_data_destination_scenario.dump_scenario_map(scenario_map_collection, scenario_info_collection)
+        scenario_map_collection, scenario_dframe_collection = driver_data_destination_scenario.compute_scenario_map(
+            scenario_info_collection)
+        driver_data_destination_scenario.dump_scenario_map(scenario_map_collection,
+                                                           scenario_info_collection, scenario_dframe_collection)
         # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------

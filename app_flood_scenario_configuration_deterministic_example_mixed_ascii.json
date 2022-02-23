@@ -4,18 +4,19 @@
       "title": "Floods - Scenarios",
       "web-site": "",
       "source": "Python application developed by CIMA Research Foundation",
-      "history": "1.8.0 [20220201]",
+      "history": "1.9.0 [20220223]",
       "project-info": "floods",
       "algorithm": ""
     },
     "flags": {
       "cleaning_static_data": false,
-      "cleaning_dynamic_data_discharge_obs": false,
-      "cleaning_dynamic_data_discharge_sim": false,
-      "cleaning_dynamic_data_scenario_info": true,
-      "cleaning_dynamic_data_scenario_file": false,
-      "cleaning_dynamic_data_scenario_maps": false,
-      "cleaning_dynamic_plot": true
+      "cleaning_ancillary_data_discharge_obs": true,
+      "cleaning_ancillary_data_discharge_sim": true,
+      "cleaning_ancillary_data_scenario_info": true,
+      "cleaning_ancillary_data_scenario_file": true,
+      "cleaning_ancillary_data_scenario_maps": true,
+      "cleaning_dynamic_plot": true,
+      "cleaning_dynamic_data": true
     },
     "ancillary": {
       "__comment__": "scenario_analysis: [max_period, all_period], scenario_tiling: [rounded, weighted], scenario_type: [observed, simulated, mixed], scenario_method: [max]",
@@ -46,8 +47,10 @@
       "ancillary_datetime_discharge": "%Y%m%d%H%M",
       "ancillary_sub_path_time_scenario": "%Y/%m/%d/",
       "ancillary_datetime_scenario": "%Y%m%d%H%M",
-      "destination_sub_path_time_scenario": "%Y/%m/%d/",
-      "destination_datetime_scenario": "%Y%m%d%H%M"
+      "destination_sub_path_time_scenario_plot": "%Y/%m/%d/",
+      "destination_datetime_scenario_plot": "%Y%m%d%H%M",
+      "destination_sub_path_time_scenario_data": "%Y/%m/%d/",
+      "destination_datetime_scenario_data": "%Y%m%d%H%M"
     }
   },
   "data": {
@@ -62,8 +65,9 @@
           "file_name": "{domain_name}_WD_max_Q{tr}.tif"
         },
         "hazard_data": {
-          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/hazard_data/{domain_name}_15112021/",
-          "file_name": "{domain_name}_hazmap_T{tr}.mat"
+          "__comment__": "filename: {domain_name}_hazmap_T{tr}.mat, {domain_name}_WD_max_T{tr}.mat, {domain_name}_WD_max_T{tr}.tif",
+          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/hazard_data/Abaco_{domain_name}_TIF/",
+          "file_name": "{domain_name}_WD_max_T{tr}.tif"
         },
         "drainage_area_data": {
           "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_static/telemac_data/{domain_name}_15112021/",
@@ -151,27 +155,36 @@
         }
       },
       "destination" : {
-        "scenario_plot_tiff": {
-          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
-          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.tiff",
-          "save_status": true
+        "plot": {
+          "scenario_tiff": {
+            "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+            "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.tiff",
+            "save_status": true
+          },
+          "scenario_png": {
+            "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+            "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.png",
+            "save_status": false
+          },
+          "scenario_info": {
+            "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
+            "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.json",
+            "save_status": true
+          }
         },
-        "scenario_plot_png": {
-          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
-          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.png",
-          "save_status": false
-        },
-        "scenario_plot_info": {
-          "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario}",
-          "file_name": "scenario_{domain_name}_{destination_datetime_scenario}.json",
-          "save_status": true
+        "data": {
+          "scenario_time_series": {
+            "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/data_dynamic/outcome/scenario_run_obs_ws/{destination_sub_path_time_scenario_data}/time_series/",
+            "file_name": "scenario_{domain_name}_{destination_datetime_scenario_data}_ts.json",
+            "save_status": true
+          }
         }
       }
     }
   },
   "log": {
     "folder_name": "/home/fabio/Documents/Work_Area/Code_Development/Workspace/PyCharm_ARPAL/floods-ws/log/",
-    "file_name": "arpal_flood_log_run_obs_ws.txt"
+    "file_name": "floods_ascii_mixed_land_flow.txt"
   },
   "time": {
     "time_now": null,

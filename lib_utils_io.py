@@ -15,12 +15,15 @@ import os
 import json
 import pickle
 import rasterio
+import numpy as np
 import xarray as xr
+import pandas as pd
 import scipy.io
 
+from copy import deepcopy
 from rasterio.transform import Affine
 from osgeo import gdal, gdalconst
-from lib_info_args import logger_name
+from lib_info_args import logger_name, time_format_algorithm
 
 logging.getLogger('rasterio').setLevel(logging.WARNING)
 
@@ -99,6 +102,93 @@ def read_file_tif(file_name):
         raise NotImplementedError('File multi-band not implemented yet')
 
     return file_data, file_proj, file_geotrans
+# -------------------------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------------------------
+# Method to save data info in json format
+def save_file_json(file_name, file_data_dict, file_indent=4, file_sep=',', file_float_decimals=2, file_nodata=-9999.0):
+
+    file_data_json = {}
+    for file_key, file_value in file_data_dict.items():
+        if isinstance(file_value, list):
+            file_value = [str(i) for i in file_value]
+            file_value = file_sep.join(file_value)
+        elif isinstance(file_value, np.int):
+            if np.isnan(value_step):
+                value_step = file_nodata
+            file_value = str(np.int(file_value))
+        elif isinstance(file_value, np.float):
+            if np.isnan(value_step):
+                value_step = file_nodata
+            file_value = str(round(file_value, file_float_decimals))
+        elif isinstance(file_value, str):
+            pass
+        elif isinstance(file_value, dict):
+            file_tmp = {}
+            for value_key, value_data in file_value.items():
+                if isinstance(value_data, np.datetime64):
+                    time_stamp = pd.to_datetime(str(value_data))
+                    time_str = time_stamp.strftime(time_format_algorithm)
+                    file_tmp[value_key] = time_str
+                elif isinstance(value_data, list):
+                    list_obj = []
+                    for value_step in value_data:
+
+                        if isinstance(value_step, pd.Timestamp):
+                            value_obj = value_step.strftime(time_format_algorithm)
+                        elif isinstance(value_step, np.int):
+                            if np.isnan(value_step):
+                                value_step = file_nodata
+                            value_obj = str(np.int(value_step))
+                        elif isinstance(value_step, np.float):
+                            if np.isnan(value_step):
+                                value_step = file_nodata
+                            value_obj = str(round(value_step, file_float_decimals))
+                        elif isinstance(value_step, str):
+                            value_obj = deepcopy(value_step)
+                        else:
+                            log_stream.error(' ===> Type of list element is not supported')
+                            raise NotImplementedError('Format not implemented yet')
+                        list_obj.append(value_obj)
+                    string_obj = file_sep.join(list_obj)
+                    file_tmp[value_key] = string_obj
+                elif isinstance(value_data, dict):
+
+                    for key_step, value_step in value_data.items():
+                        if isinstance(value_step, pd.Timestamp):
+                            value_obj = value_step.strftime(time_format_algorithm)
+                        elif isinstance(value_step, bool):
+                            value_obj = deepcopy(value_step)
+                        elif isinstance(value_step, np.int):
+                            if np.isnan(value_step):
+                                value_step = file_nodata
+                            value_obj = str(np.int(value_step))
+                        elif isinstance(value_step, np.float):
+                            if np.isnan(value_step):
+                                value_step = file_nodata
+                            value_obj = str(round(value_step, file_float_decimals))
+                        elif isinstance(value_step, str):
+                            value_obj = deepcopy(value_step)
+                        else:
+                            log_stream.error(' ===> Type of dict element is not supported')
+                            raise NotImplementedError('Format not implemented yet')
+
+                        file_tmp[key_step] = value_obj
+                else:
+                    file_tmp[value_key] = value_data
+            file_value = deepcopy(file_tmp)
+        else:
+            log_stream.error(' ===> Error in getting datasets')
+            raise RuntimeError('Datasets case not implemented yet')
+
+        file_data_json[file_key] = file_value
+
+    file_data = json.dumps(file_data_json, indent=file_indent, ensure_ascii=False, sort_keys=True)
+    with open(file_name, "w", encoding='utf-8') as file_handle:
+        file_handle.write(file_data)
+
+    pass
 # -------------------------------------------------------------------------------------
 
 

@@ -18,10 +18,11 @@ from copy import deepcopy
 import pandas as pd
 
 from lib_utils_hazard import read_file_hazard
-from lib_utils_io import read_obj, write_obj
+from lib_utils_io import read_obj, write_obj, save_file_json
 from lib_utils_system import fill_tags2string, make_folder
 from lib_utils_generic import get_dict_value, reduce_dict_2_lists
-from lib_utils_plot import save_file_tiff, save_file_png, save_file_json, read_file_tiff
+from lib_utils_plot import save_file_tiff, save_file_png, read_file_tiff, save_file_info
+from lib_utils_ts import prepare_file_ts, save_file_ts
 from lib_utils_tr import cmp_tr_exp, cmp_tr_linear
 
 from lib_info_args import logger_name, time_format_algorithm
@@ -46,12 +47,13 @@ class DriverScenario:
                  flag_scenario_data_info='scenario_data_info',
                  flag_scenario_data_file='scenario_data_file',
                  flag_scenario_data_map='scenario_data_map',
-                 flag_scenario_plot_info='scenario_plot_info',
-                 flag_scenario_plot_tiff='scenario_plot_tiff',
-                 flag_scenario_plot_png='scenario_plot_png',
+                 flag_scenario_plot_info='scenario_info',
+                 flag_scenario_plot_tiff='scenario_tiff',
+                 flag_scenario_plot_png='scenario_png',
+                 flag_scenario_data_ts='scenario_time_series',
                  flag_cleaning_anc_scenario_info=True, flag_cleaning_anc_scenario_file=True,
                  flag_cleaning_anc_scenario_map=True,
-                 flag_cleaning_plot_scenario=True):
+                 flag_cleaning_plot_scenario=True, flag_cleaning_data_scenario=True):
 
         self.time_now = time_now
         self.time_run = time_run
@@ -67,6 +69,7 @@ class DriverScenario:
         self.flag_scenario_plot_info = flag_scenario_plot_info
         self.flag_scenario_plot_tiff = flag_scenario_plot_tiff
         self.flag_scenario_plot_png = flag_scenario_plot_png
+        self.flag_scenario_data_ts = flag_scenario_data_ts
 
         self.alg_ancillary = alg_ancillary
         self.tr_min = alg_ancillary['tr_min']
@@ -84,6 +87,8 @@ class DriverScenario:
         self.file_name_tag = 'file_name'
         self.folder_name_tag = 'folder_name'
         self.save_status_tag = 'save_status'
+        self.group_dst_plot = 'plot'
+        self.group_dst_data = 'data'
 
         self.domain_name_list = self.alg_ancillary['domain_name']
 
@@ -111,20 +116,27 @@ class DriverScenario:
         self.format_tr = '{:03d}'
         self.scenario_tr = self.define_tr_scenario(self.tr_min, self.tr_max, self.tr_freq)
 
-        self.folder_name_scenario_plot_info = dst_dict[self.flag_scenario_plot_info][self.folder_name_tag]
-        self.file_name_scenario_plot_info = dst_dict[self.flag_scenario_plot_info][self.file_name_tag]
-        self.save_status_scenario_plot_info = dst_dict[self.flag_scenario_plot_info][self.save_status_tag]
-        self.folder_name_scenario_plot_tiff = dst_dict[self.flag_scenario_plot_tiff][self.folder_name_tag]
-        self.file_name_scenario_plot_tiff = dst_dict[self.flag_scenario_plot_tiff][self.file_name_tag]
-        self.save_status_scenario_plot_tiff = dst_dict[self.flag_scenario_plot_tiff][self.save_status_tag]
-        self.folder_name_scenario_plot_png = dst_dict[self.flag_scenario_plot_png][self.folder_name_tag]
-        self.file_name_scenario_plot_png = dst_dict[self.flag_scenario_plot_png][self.file_name_tag]
-        self.save_status_scenario_plot_png = dst_dict[self.flag_scenario_plot_png][self.save_status_tag]
+        group_dst_plot = dst_dict[self.group_dst_plot]
+        self.folder_name_scenario_plot_info = group_dst_plot[self.flag_scenario_plot_info][self.folder_name_tag]
+        self.file_name_scenario_plot_info = group_dst_plot[self.flag_scenario_plot_info][self.file_name_tag]
+        self.save_status_scenario_plot_info = group_dst_plot[self.flag_scenario_plot_info][self.save_status_tag]
+        self.folder_name_scenario_plot_tiff = group_dst_plot[self.flag_scenario_plot_tiff][self.folder_name_tag]
+        self.file_name_scenario_plot_tiff = group_dst_plot[self.flag_scenario_plot_tiff][self.file_name_tag]
+        self.save_status_scenario_plot_tiff = group_dst_plot[self.flag_scenario_plot_tiff][self.save_status_tag]
+        self.folder_name_scenario_plot_png = group_dst_plot[self.flag_scenario_plot_png][self.folder_name_tag]
+        self.file_name_scenario_plot_png = group_dst_plot[self.flag_scenario_plot_png][self.file_name_tag]
+        self.save_status_scenario_plot_png = group_dst_plot[self.flag_scenario_plot_png][self.save_status_tag]
+
+        group_dst_data = dst_dict[self.group_dst_data]
+        self.folder_name_scenario_data_ts = group_dst_data[self.flag_scenario_data_ts][self.folder_name_tag]
+        self.file_name_scenario_data_ts = group_dst_data[self.flag_scenario_data_ts][self.file_name_tag]
+        self.save_status_scenario_data_ts = group_dst_data[self.flag_scenario_data_ts][self.save_status_tag]
 
         self.flag_cleaning_anc_scenario_info = flag_cleaning_anc_scenario_info
         self.flag_cleaning_anc_scenario_file = flag_cleaning_anc_scenario_file
         self.flag_cleaning_anc_scenario_map = flag_cleaning_anc_scenario_map
         self.flag_cleaning_plot_scenario = flag_cleaning_plot_scenario
+        self.flag_cleaning_data_scenario = flag_cleaning_data_scenario
 
         scenario_description_collection = {}
         for domain_name_step in self.domain_name_list:
@@ -148,6 +160,10 @@ class DriverScenario:
         self.domain_scenario_n_tag = 'scenario_n'
         self.domain_scenario_attrs_tag = 'scenario_attrs'
 
+        self.domain_scenario_index_cmp_tag = 'scenario_idx_cmp'
+        self.domain_scenario_discharge_cmp_tag = 'discharge_value_cmp'
+        self.domain_scenario_h_cmp_tag = 'h_value_cmp'
+
         self.domain_scenario_area_tag = "mappa_aree_new"
         self.domain_scenario_grid_x_tag = "new_x"
         self.domain_scenario_grid_y_tag = "new_y"
@@ -163,6 +179,9 @@ class DriverScenario:
         self.var_name_discharge = 'discharge'
         self.var_name_water_level = 'water_level'
         self.var_name_type = 'type'
+
+        self.dframe_columns = [self.domain_scenario_index_cmp_tag, self.domain_scenario_discharge_cmp_tag,
+                               self.domain_scenario_h_cmp_tag]
 
         self.correction_discharge_factor = 1.16
         # -------------------------------------------------------------------------------------
@@ -196,7 +215,7 @@ class DriverScenario:
 
     # -------------------------------------------------------------------------------------
     # Method to compute tr for evaluating scenario
-    def compute_scenario_tr(self, section_discharge_idx, section_discharge_values):
+    def compute_scenario_tr(self, section_discharge_idx, section_discharge_values, section_discharge_name):
 
         if not isinstance(section_discharge_values, list):
             section_discharge_values = [section_discharge_values]
@@ -206,16 +225,17 @@ class DriverScenario:
             section_scenario_trs = []
             section_scenario_trs_right, section_scenario_trs_left = [], []
             section_scenario_weights_right, section_scenario_weights_left = [], []
-            for section_discharge_value in section_discharge_values:
+            for section_discharge_id, section_discharge_value in enumerate(section_discharge_values):
 
                 if section_discharge_value >= 0.0:
 
-                    if section_discharge_value >= section_discharge_idx * 1.16:
+                    if section_discharge_value >= section_discharge_idx * self.correction_discharge_factor:
                         section_scenario_tr_rounded, \
                             section_scenario_tr_right, section_scenario_tr_left, \
                             section_scenario_weight_right, section_scenario_weight_left = cmp_tr_exp(
                                 section_discharge_idx, section_discharge_value)
                     else:
+
                         section_scenario_tr_rounded, \
                             section_scenario_tr_right, section_scenario_tr_left, \
                             section_scenario_weight_right, section_scenario_weight_left = cmp_tr_linear(
@@ -303,9 +323,11 @@ class DriverScenario:
         file_path_dict = {}
         for domain_name in domain_list:
             template_values_step = {'domain_name': domain_name,
-                                    'destination_sub_path_time_scenario': time_run,
+                                    'destination_sub_path_time_scenario_plot': time_run,
+                                    'destination_sub_path_time_scenario_data': time_run,
                                     'ancillary_sub_path_time_scenario': time_run,
-                                    'destination_datetime_scenario': time_step,
+                                    'destination_datetime_scenario_plot': time_step,
+                                    'destination_datetime_scenario_data': time_step,
                                     'ancillary_datetime_scenario': time_step
                                     }
 
@@ -336,7 +358,7 @@ class DriverScenario:
 
     # -------------------------------------------------------------------------------------
     # Method to dump scenario map
-    def dump_scenario_map(self, scenario_map_collection, scenario_info_collection):
+    def dump_scenario_map(self, scenario_map_collection, scenario_info_collection, scenario_dframe_collection):
 
         time_run = self.time_run
         time_now = self.time_now
@@ -345,7 +367,8 @@ class DriverScenario:
         geo_data_collection = self.geo_data_collection
         scenario_description_collection = self.scenario_description_collection
 
-        log_stream.info(' ---> Dump scenario maps [' + time_run.strftime(time_format_algorithm) + '] ... ')
+        log_stream.info(' ---> Dump scenario time-series, maps and info [' + time_run.strftime(time_format_algorithm) +
+                        '] ... ')
 
         for domain_name_step in self.domain_name_list:
 
@@ -354,6 +377,7 @@ class DriverScenario:
             domain_geo_collection = geo_data_collection[domain_name_step]
             domain_info_collection = scenario_info_collection[domain_name_step]
             domain_map_collection = scenario_map_collection[domain_name_step]
+            domain_dframe_collection = scenario_dframe_collection[domain_name_step]
             domain_description_collection = scenario_description_collection[domain_name_step]
 
             if not domain_map_collection:
@@ -361,14 +385,50 @@ class DriverScenario:
 
             if domain_map_collection is not None:
 
+                log_stream.info(' -----> Time-Series section  ... ')
+                log_stream.info(' ------> Prepare file data  ... ')
+                file_path_scenario_data_ts = self.define_file_scenario(
+                    time_now, self.folder_name_scenario_data_ts, self.file_name_scenario_data_ts,
+                    domain_name_step, file_type='string', time_step=time_now)
+
+                if self.flag_cleaning_data_scenario:
+                    if os.path.exists(file_path_scenario_data_ts):
+                        os.remove(file_path_scenario_data_ts)
+
+                domain_ts_data = prepare_file_ts(domain_description_collection, domain_dframe_collection,
+                                                 domain_info_collection)
+
+                log_stream.info(' ------> Prepare file data  ... DONE')
+
+                # Save information in ts file
+                folder_name_scenario_data_ts, file_name_scenario_data_ts = os.path.split(
+                    file_path_scenario_data_ts)
+                make_folder(folder_name_scenario_data_ts)
+
+                log_stream.info(' ------> Save file ts ' + file_name_scenario_data_ts + ' ... ')
+                if self.save_status_scenario_data_ts:
+                    if not os.path.exists(file_path_scenario_data_ts):
+                        save_file_ts(file_path_scenario_data_ts, domain_ts_data)
+                        log_stream.info(' -------> Save file ts ' + file_name_scenario_data_ts + ' ... DONE')
+                    else:
+                        log_stream.info(' ------> Save file ts ' + file_name_scenario_data_ts + ' ... PREVIOUSLY SAVED')
+                else:
+                    log_stream.info(' ------> Save file ts ' + file_name_scenario_data_ts +
+                                    ' ... SKIPPED. Save method is deactivated')
+
+                log_stream.info(' ------> Save file ts ' + file_name_scenario_data_ts + ' ... DONE')
+                log_stream.info(' -----> Time-Series section  ... DONE')
+
+                log_stream.info(' -----> Maps section  ... ')
                 for domain_map_time, domain_map_file_ancillary in sorted(domain_map_collection.items()):
 
-                    log_stream.info(' -----> Time step "' + domain_map_time.strftime(time_format_algorithm) + '" ... ')
+                    log_stream.info(' ------> Time step "' + domain_map_time.strftime(time_format_algorithm) + '" ... ')
 
-                    log_stream.info(' ------> Prepare file data ... ')
+                    log_stream.info(' -------> Prepare file data ... ')
 
                     if domain_map_file_ancillary.endswith('tiff') or \
                             domain_map_file_ancillary.endswith('tif'):
+
                         domain_map_data = read_file_tiff(domain_map_file_ancillary)
 
                         # DEBUG START
@@ -454,24 +514,24 @@ class DriverScenario:
                     section_info_collection['scenario_time_now'] = time_now_string
                     section_info_collection['scenario_time_step'] = time_step_string
 
-                    log_stream.info(' ------> Prepare file data ... DONE')
+                    log_stream.info(' -------> Prepare file data ... DONE')
 
                     # Save information in json file
                     folder_name_scenario_plot_info, file_name_scenario_plot_info = os.path.split(
                         file_path_scenario_plot_info)
                     make_folder(folder_name_scenario_plot_info)
 
-                    log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info + ' ... ')
+                    log_stream.info(' -------> Save file json ' + file_name_scenario_plot_info + ' ... ')
                     if self.save_status_scenario_plot_info:
                         if not os.path.exists(file_path_scenario_plot_info):
-                            save_file_json(file_path_scenario_plot_info, section_info_collection)
-                            log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
+                            save_file_info(file_path_scenario_plot_info, section_info_collection)
+                            log_stream.info(' -------> Save file json ' + file_name_scenario_plot_info +
                                             ' ... DONE')
                         else:
-                            log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
+                            log_stream.info(' -------> Save file json ' + file_name_scenario_plot_info +
                                             ' ... PREVIOUSLY SAVED')
                     else:
-                        log_stream.info(' ------> Save file json ' + file_name_scenario_plot_info +
+                        log_stream.info(' -------> Save file json ' + file_name_scenario_plot_info +
                                         ' ... SKIPPED. Save method is deactivated')
 
                     # Save information in png file
@@ -479,7 +539,7 @@ class DriverScenario:
                         file_path_scenario_plot_png)
                     make_folder(folder_name_scenario_plot_png)
 
-                    log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png + ' ... ')
+                    log_stream.info(' -------> Save file png ' + file_name_scenario_plot_png + ' ... ')
                     if self.save_status_scenario_plot_png:
                         if not os.path.exists(file_path_scenario_plot_png):
                             save_file_png(file_path_scenario_plot_png,
@@ -488,13 +548,13 @@ class DriverScenario:
                                           scenario_time_now_string=time_now_string,
                                           scenario_time_step_string=time_step_string,
                                           fig_color_map_type=None, fig_dpi=150)
-                            log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
+                            log_stream.info(' -------> Save file png ' + file_name_scenario_plot_png +
                                             ' ... DONE')
                         else:
-                            log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
+                            log_stream.info(' -------> Save file png ' + file_name_scenario_plot_png +
                                             ' ... PREVIOUSLY SAVED')
                     else:
-                        log_stream.info(' ------> Save file png ' + file_name_scenario_plot_png +
+                        log_stream.info(' -------> Save file png ' + file_name_scenario_plot_png +
                                         ' ... SKIPPED. Save method is deactivated')
 
                     # Save information in tiff file
@@ -502,29 +562,32 @@ class DriverScenario:
                         file_path_scenario_plot_tiff)
                     make_folder(folder_name_scenario_plot_tiff)
 
-                    log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff + ' ... ')
+                    log_stream.info(' -------> Save file tiff ' + file_name_scenario_plot_tiff + ' ... ')
                     if self.save_status_scenario_plot_tiff:
                         if not os.path.exists(file_path_scenario_plot_tiff):
                             save_file_tiff(file_path_scenario_plot_tiff,
                                            domain_map_data, domain_geo_x, domain_geo_y,
                                            file_epsg_code='EPSG:32632')
-                            log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
+                            log_stream.info(' -------> Save file tiff ' + file_name_scenario_plot_tiff +
                                             ' ... DONE')
                         else:
-                            log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
+                            log_stream.info(' -------> Save file tiff ' + file_name_scenario_plot_tiff +
                                             ' ... PREVIOUSLY SAVED')
                     else:
-                        log_stream.info(' ------> Save file tiff ' + file_name_scenario_plot_tiff +
+                        log_stream.info(' -------> Save file tiff ' + file_name_scenario_plot_tiff +
                                         ' ... SKIPPED. Save method is deactivated')
 
-                    log_stream.info(' -----> Time step "' + domain_map_time.strftime(time_format_algorithm) + '" ... DONE')
+                    log_stream.info(' ------> Time step "' + domain_map_time.strftime(time_format_algorithm) +
+                                    '" ... DONE')
 
-                    log_stream.info(' ----> Domain "' + domain_name_step + '" ... DONE')
+                log_stream.info(' -----> Maps section  ... DONE')
+                log_stream.info(' ----> Domain "' + domain_name_step + '" ... DONE')
 
             else:
                 log_stream.info(' ----> Domain "' + domain_name_step + '" ... SKIPPED. Datasets are empty')
 
-        log_stream.info(' ---> Dump scenario maps [' + time_run.strftime(time_format_algorithm) + '] ... DONE')
+        log_stream.info(' ---> Dump scenario time-series, maps and info [' + time_run.strftime(time_format_algorithm) +
+                        '] ... DONE')
 
     # -------------------------------------------------------------------------------------
 
@@ -540,6 +603,7 @@ class DriverScenario:
         log_stream.info(' ---> Compute scenario maps [' + time.strftime(time_format_algorithm) + '] ... ')
 
         scenario_map_collection = {}
+        scenario_dframe_collection = {}
         for domain_name_step in self.domain_name_list:
 
             log_stream.info(' ----> Domain "' + domain_name_step + '" ... ')
@@ -566,7 +630,7 @@ class DriverScenario:
                     file_path_scenario_tmp = []
                     if os.path.exists(file_path_scenario_anc_domain_file):
                         file_path_scenario_obj = read_obj(file_path_scenario_anc_domain_file)
-                        file_path_scenario_tmp = list(file_path_scenario_obj.values())
+                        file_path_scenario_tmp = list(file_path_scenario_obj['file_path'].values())
                         os.remove(file_path_scenario_anc_domain_file)
 
                     for file_path_step in file_path_scenario_tmp:
@@ -575,9 +639,14 @@ class DriverScenario:
 
                 if not os.path.exists(file_path_scenario_anc_domain_file):
 
+                    section_dframe_collections = {}
                     file_path_scenarios_collections = {}
                     for section_scenario_id, \
                             (section_scenario_key, section_scenario_data) in enumerate(domain_scenario_data.items()):
+
+                        # DEBUG
+                        # section_scenario_key = 'Entella_Carasco'
+                        # section_scenario_data = domain_scenario_data[section_scenario_key]
 
                         log_stream.info(' -----> Section "' + section_scenario_key + '" ... ')
 
@@ -595,12 +664,18 @@ class DriverScenario:
                             section_db_name_downstream = section_db_data['name_point_downstream']
                             section_db_name_upstream = section_db_data['name_point_upstream']
                             section_db_name_obs = section_db_data['name_point_obs']
-                            section_db_idx = section_db_data['idx']
+                            section_db_idx_terrain = section_db_data['idx_data_terrain']
+
+                            if 'idx_data_hydraulic' in list(section_db_data.keys()):
+                                section_db_idx_hydraulic = section_db_data['idx_data_hydraulic']
+                            else:
+                                section_db_idx_hydraulic = None
 
                             assert section_db_description == section_scenario_key
 
                             if section_scenario_data is not None:
 
+                                section_scenario_discharges = section_scenario_data[self.domain_scenario_discharge_tag]
                                 section_scenario_trs_cmp = section_scenario_data[self.domain_scenario_index_tag]
                                 section_scenario_trs_right = section_scenario_data[self.domain_scenario_index_right_tag]
                                 section_scenario_trs_left = section_scenario_data[self.domain_scenario_index_left_tag]
@@ -617,8 +692,12 @@ class DriverScenario:
                                     log_stream.info(' -----> Section "' + section_scenario_key + '" ... FAILED')
                                     raise NotImplementedError('Case not implemented yet')
 
+                                section_scenario_time_list, section_scenario_discharge_list = [], []
+                                section_scenario_tr_list, section_scenario_h_list = [], []
+                                section_scenario_tr_list_right, section_scenario_tr_list_left = [], []
                                 for id_scenario_time, section_scenario_time in enumerate(section_scenario_times):
 
+                                    section_scenario_discharge = section_scenario_discharges[id_scenario_time]
                                     section_scenario_tr_cmp = section_scenario_trs_cmp[id_scenario_time]
                                     section_scenario_tr_right = section_scenario_trs_right[id_scenario_time]
                                     section_scenario_tr_left = section_scenario_trs_left[id_scenario_time]
@@ -673,9 +752,16 @@ class DriverScenario:
                                         section_area_idx = np.argwhere(
                                             domain_geo_collection[self.domain_scenario_area_tag] == section_db_n)
 
-                                        section_scenario_tr_select = max(1, min(self.tr_max, section_scenario_tr_check))
-                                        section_scenario_tr_right_select = max(1, min(self.tr_max, section_scenario_tr_right_check))
-                                        section_scenario_tr_left_select = max(1, min(self.tr_max, section_scenario_tr_left_check))
+                                        section_scenario_tr_select = max(self.tr_min,
+                                                                         min(self.tr_max, section_scenario_tr_check))
+                                        section_scenario_tr_right_select = max(self.tr_min,
+                                                                               min(self.tr_max, section_scenario_tr_right_check))
+                                        section_scenario_tr_left_select = max(self.tr_min,
+                                                                              min(self.tr_max, section_scenario_tr_left_check))
+
+                                        if section_scenario_tr_right_select > section_scenario_tr_left_select:
+                                            log_stream.error(' ===> Left scenario must be greater then right scenario')
+                                            raise RuntimeError('Check the evaluation of scenario boundaries')
 
                                         if self.scenario_tiling == 'rounded':
 
@@ -689,7 +775,12 @@ class DriverScenario:
                                                 file_format=[self.domain_scenario_hazard_format],
                                                 file_scale_factor=[self.domain_scenario_hazard_scale_factor])
 
-                                            file_data_h = file_data_hazard[self.domain_scenario_hazard_name]
+                                            if file_data_hazard is not None:
+                                                file_data_h = file_data_hazard[self.domain_scenario_hazard_name]
+                                            else:
+                                                log_stream.error(' ===> File hazard "' + file_path_hazard +
+                                                                 '" is not available. Check your folder.')
+                                                raise FileNotFoundError('File not found.')
 
                                         elif self.scenario_tiling == 'weighted':
 
@@ -711,13 +802,26 @@ class DriverScenario:
                                                 file_format=[self.domain_scenario_hazard_format],
                                                 file_scale_factor=[self.domain_scenario_hazard_scale_factor])
 
-                                            file_data_h_right = file_data_hazard_right[self.domain_scenario_hazard_name]
-                                            file_data_h_left = file_data_hazard_left[self.domain_scenario_hazard_name]
+                                            if file_data_hazard_right is not None:
+                                                file_data_h_right = file_data_hazard_right[self.domain_scenario_hazard_name]
+                                            else:
+                                                log_stream.error(' ===> File hazard "' + file_data_hazard_right +
+                                                                 '" is not available. Check your folder.')
+                                                raise FileNotFoundError('File not found.')
+
+                                            if file_data_hazard_left is not None:
+                                                file_data_h_left = file_data_hazard_left[self.domain_scenario_hazard_name]
+                                            else:
+                                                log_stream.error(' ===> File hazard "' + file_data_hazard_right +
+                                                                 '" is not available. Check your folder.')
+                                                raise FileNotFoundError('File not found.')
 
                                             file_data_h = (file_data_h_right * section_scenario_wg_right_check +
                                                            file_data_h_left * section_scenario_wg_left_check) / 2
-
                                             file_data_h[file_data_h < 0.0] = 0.0
+
+                                            section_scenario_tr_select = (section_scenario_tr_right_select +
+                                                                          section_scenario_tr_left_select) / 2
 
                                         else:
                                             log_stream.info(' ===> Scenario tiling method "' +
@@ -726,6 +830,11 @@ class DriverScenario:
 
                                         idx_x = section_area_idx[:, 0]
                                         idx_y = section_area_idx[:, 1]
+
+                                        if section_db_idx_hydraulic is not None:
+                                            section_scenario_h_select = file_data_h[section_db_idx_hydraulic[0], section_db_idx_hydraulic[1]]
+                                        else:
+                                            section_scenario_h_select = np.nan
 
                                         if not os.path.exists(file_path_scenario_anc_map):
 
@@ -794,10 +903,35 @@ class DriverScenario:
                                                         '" ... DONE')
 
                                     else:
-                                        log_stream.info(' ------> Time step "' +
-                                                        section_scenario_time.strftime(time_format_algorithm) +
-                                                        '" ... SKIPPED. Scenarios threshold is less then minimum threshold')
+                                        section_scenario_tr_select = np.nan
+                                        section_scenario_h_select = np.nan
+                                        section_scenario_tr_right_select = np.nan
+                                        section_scenario_tr_left_select = np.nan
+                                        log_stream.info(
+                                            ' ------> Time step "' +
+                                            section_scenario_time.strftime(time_format_algorithm) +
+                                            '" ... SKIPPED. Scenarios threshold is less then minimum threshold')
 
+                                    section_scenario_time_list.append(section_scenario_time)
+                                    section_scenario_discharge_list.append(section_scenario_discharge)
+                                    section_scenario_tr_list.append(section_scenario_tr_select)
+                                    section_scenario_h_list.append(section_scenario_h_select)
+                                    section_scenario_tr_list_right.append(section_scenario_tr_right_select)
+                                    section_scenario_tr_list_left.append(section_scenario_tr_left_select)
+
+                                    section_scenario_tmp = list(zip(
+                                        section_scenario_time_list, section_scenario_tr_list,
+                                        section_scenario_discharge_list, section_scenario_h_list))
+
+                                # Store time-series of tr, q and h (for a selected point)
+                                dframe_data = {self.dframe_columns[0]: section_scenario_tr_list,
+                                               self.dframe_columns[1]: section_scenario_discharge_list,
+                                               self.dframe_columns[2]: section_scenario_h_list}
+                                dframe_index = section_scenario_time_list
+
+                                dframe_summary = pd.DataFrame(index=dframe_index, data=dframe_data)
+
+                                section_dframe_collections[section_scenario_key] = dframe_summary
                                 log_stream.info(' -----> Section "' + section_scenario_key + '" ... DONE')
 
                             else:
@@ -812,26 +946,34 @@ class DriverScenario:
                     folder_name_scenario_anc_domain_file, file_name_scenario_anc_domain_file = os.path.split(
                         file_path_scenario_anc_domain_file)
                     make_folder(folder_name_scenario_anc_domain_file)
-                    write_obj(file_path_scenario_anc_domain_file, file_path_scenarios_collections)
+
+                    file_data_scenario = {'file_path': file_path_scenarios_collections,
+                                          'file_dframe': section_dframe_collections}
+                    write_obj(file_path_scenario_anc_domain_file, file_data_scenario)
 
                     log_stream.info(' ----> Domain "' + domain_name_step + '" ... DONE')
 
                 else:
 
                     # Load scenario maps file
-                    file_path_scenarios_collections = read_obj(file_path_scenario_anc_domain_file)
+                    file_data_scenario = read_obj(file_path_scenario_anc_domain_file)
+                    file_path_scenarios_collections = file_data_scenario['file_path']
+                    section_dframe_collections = file_data_scenario['file_dframe']
+
                     log_stream.info(' ----> Domain "' + domain_name_step + '" ... SKIPPED. File previously saved.')
 
                 # Update collection workspace
                 scenario_map_collection[domain_name_step] = file_path_scenarios_collections
+                scenario_dframe_collection[domain_name_step] = section_dframe_collections
 
             else:
                 log_stream.info(' ----> Domain "' + domain_name_step + '" ... SKIPPED. Domain datasets are empty')
                 scenario_map_collection[domain_name_step] = None
+                scenario_dframe_collection[domain_name_step] = None
 
         log_stream.info(' ---> Compute scenario maps [' + time.strftime(time_format_algorithm) + '] ... DONE')
 
-        return scenario_map_collection
+        return scenario_map_collection, scenario_dframe_collection
     # -------------------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------------------
@@ -889,7 +1031,7 @@ class DriverScenario:
                         section_db_description = section_db_data['description']
                         section_db_name_outlet = section_db_data['name_point_outlet']
                         section_db_name_obs = section_db_data['name_point_obs']
-                        section_db_idx = section_db_data['idx']
+                        section_db_idx = section_db_data['idx_data_terrain']
 
                         assert section_db_description == section_obj_key
 
@@ -910,7 +1052,8 @@ class DriverScenario:
                             section_scenario_trs,\
                                 section_scenario_trs_right, section_scenario_trs_left, \
                                 section_scenario_weights_right, section_scenario_weights_left\
-                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
+                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_value,
+                                                               section_discharge_name=section_db_description)
 
                             domain_scenario_workspace[section_obj_key] = {}
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs
@@ -939,7 +1082,8 @@ class DriverScenario:
                             section_scenario_trs,\
                                 section_scenario_trs_right, section_scenario_trs_left, \
                                 section_scenario_weights_right, section_scenario_weights_left\
-                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_values)
+                                = self.compute_scenario_tr(section_discharge_idx, section_discharge_values,
+                                                           section_discharge_name=section_db_description)
 
                             domain_scenario_workspace[section_obj_key] = {}
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs

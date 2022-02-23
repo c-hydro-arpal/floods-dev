@@ -902,7 +902,7 @@ class DriverDischarge:
 
                     section_description = section_data['description']
                     section_name = section_data['name_point_obs']
-                    section_idx = section_data['idx']
+                    section_idx = section_data['idx_data_terrain']
 
                     if 'section_group' in list(section_data.keys()):
                         if section_data['section_group'] is not None:
