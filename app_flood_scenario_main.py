@@ -2,8 +2,8 @@
 """
 FLOODS - Scenario Application
 
-__date__ = '20220223'
-__version__ = '1.9.0'
+__date__ = '20220228'
+__version__ = '1.9.1'
 __author__ =
         'Fabio Delogu (fabio.delogu@cimafoundation.org)',
         'Flavio Pignone (flavio.pignone@cimafoundation.org)',
@@ -17,6 +17,7 @@ General command line:
 python3 app_flood_scenario_main.py -settings_file configuration.json -time "YYYY-MM-DD HH:MM"
 
 Version(s):
+20220228 (1.9.1) --> Bugs fixing for the weighted scenarios part
 20220223 (1.9.0) --> Bugs fixing and code updating based on pre-operational release
 20220201 (1.8.0) --> Pre-operational release
 20211005 (1.7.0) --> Generic release for correcting bugs and managing the empty datasets for obs/mod discharges
@@ -48,8 +49,8 @@ log_stream = logging.getLogger(logger_name)
 
 # -------------------------------------------------------------------------------------
 # Algorithm information
-alg_version = '1.9.0'
-alg_release = '2022-02-23'
+alg_version = '1.9.1'
+alg_release = '2022-02-28'
 alg_name = 'FLOODS - Scenario Application'
 # -------------------------------------------------------------------------------------
 

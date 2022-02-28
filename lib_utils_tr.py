@@ -12,6 +12,7 @@ Version:       '1.0.0'
 import logging
 import numpy as np
 from numpy.linalg import lstsq
+from copy import deepcopy
 
 from lib_info_args import logger_name
 
@@ -22,13 +23,17 @@ log_stream = logging.getLogger(logger_name)
 
 # -------------------------------------------------------------------------------------
 # Method to compute tr exp mode
-def cmp_tr_exp(section_discharge_idx, section_discharge_value):
+def cmp_tr_exp(section_discharge_idx, section_discharge_value, section_tr_approx=2):
 
-    section_scenario_tr = np.round(np.exp(
-        (section_discharge_idx * 0.5239 + section_discharge_value) / (section_discharge_idx * 1.0433)))
+    # section_scenario_tr = np.round(np.exp(
+    #    (section_discharge_idx * 0.5239 + section_discharge_value) / (section_discharge_idx * 1.0433)))
+
+    section_scenario_tr_tmp = np.exp(
+        (section_discharge_idx * 0.5239 + section_discharge_value) / (section_discharge_idx * 1.0433))
 
     section_scenario_tr_rounded, section_scenario_tr_right, section_scenario_tr_left, \
-        section_scenario_weight_right, section_scenario_weight_left = cmp_tr_weights(section_scenario_tr)
+        section_scenario_weight_right, section_scenario_weight_left = cmp_tr_weights(
+            section_scenario_tr_tmp, decimal_tr=section_tr_approx)
 
     return section_scenario_tr_rounded, section_scenario_tr_right, section_scenario_tr_left, \
         section_scenario_weight_right, section_scenario_weight_left
@@ -38,7 +43,8 @@ def cmp_tr_exp(section_discharge_idx, section_discharge_value):
 
 # -------------------------------------------------------------------------------------
 # Method to compute tr linear mode
-def cmp_tr_linear(section_discharge_idx, section_discharge_value, section_discharge_factor=1.16):
+def cmp_tr_linear(section_discharge_idx, section_discharge_value,
+                  section_discharge_factor=1.16, section_tr_approx=2):
 
     section_scenario_tr_min = 0.0
     section_scenario_tr_max = np.exp(
@@ -55,10 +61,11 @@ def cmp_tr_linear(section_discharge_idx, section_discharge_value, section_discha
 
     line_m, line_c = lstsq(line_a, points_y)[0]
 
-    section_scenario_tr = line_m * section_discharge_value + line_c
+    section_scenario_tr_tmp = line_m * section_discharge_value + line_c
 
     section_scenario_tr_rounded, section_scenario_tr_right, section_scenario_tr_left, \
-        section_scenario_weight_right, section_scenario_weight_left = cmp_tr_weights(section_scenario_tr)
+        section_scenario_weight_right, section_scenario_weight_left = cmp_tr_weights(
+            section_scenario_tr_tmp, decimal_tr=section_tr_approx)
 
     return section_scenario_tr_rounded, \
         section_scenario_tr_right, section_scenario_tr_left, \
@@ -70,12 +77,14 @@ def cmp_tr_linear(section_discharge_idx, section_discharge_value, section_discha
 # Method to compute tr values and weights
 def cmp_tr_weights(value_tr, decimal_tr=1):
 
-    section_scenario_tr_rounded = np.around(value_tr, decimals=decimal_tr)
-    section_scenario_tr_left = np.ceil(section_scenario_tr_rounded)
-    section_scenario_tr_right = np.floor(section_scenario_tr_rounded)
+    section_scenario_tr_cmp = deepcopy(value_tr)
+    section_scenario_tr_left = np.ceil(section_scenario_tr_cmp)
+    section_scenario_tr_right = np.floor(section_scenario_tr_cmp)
 
-    section_scenario_weight_right = np.around(1 - (section_scenario_tr_rounded - section_scenario_tr_right), decimals=decimal_tr)
-    section_scenario_weight_left = np.around(1 - (section_scenario_tr_left - section_scenario_tr_rounded), decimals=decimal_tr)
+    section_scenario_weight_right = np.around(1 - (section_scenario_tr_cmp - section_scenario_tr_right), decimals=decimal_tr)
+    section_scenario_weight_left = np.around(1 - (section_scenario_tr_left - section_scenario_tr_cmp), decimals=decimal_tr)
+
+    section_scenario_tr_rounded = np.round(section_scenario_tr_cmp)
 
     return section_scenario_tr_rounded, \
         section_scenario_tr_right, section_scenario_tr_left, section_scenario_weight_right, section_scenario_weight_left

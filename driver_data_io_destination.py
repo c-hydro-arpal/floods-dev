@@ -215,17 +215,22 @@ class DriverScenario:
 
     # -------------------------------------------------------------------------------------
     # Method to compute tr for evaluating scenario
-    def compute_scenario_tr(self, section_discharge_idx, section_discharge_values, section_discharge_name):
+    def compute_scenario_tr(self, section_discharge_idx, section_discharge_times, section_discharge_values,
+                            section_discharge_name, section_scenario_tr_min=1, section_scenario_tr_max=500):
 
         if not isinstance(section_discharge_values, list):
             section_discharge_values = [section_discharge_values]
+        if not isinstance(section_discharge_times, list):
+            section_discharge_times = [section_discharge_times]
 
         if section_discharge_idx > 0.0:
 
             section_scenario_trs = []
             section_scenario_trs_right, section_scenario_trs_left = [], []
             section_scenario_weights_right, section_scenario_weights_left = [], []
-            for section_discharge_id, section_discharge_value in enumerate(section_discharge_values):
+            section_scenario_tr_check, section_scenario_tr_right_check, section_scenario_tr_left_check = [], [], []
+            for section_discharge_id, (section_discharge_time, section_discharge_value) in enumerate(
+                    zip(section_discharge_times, section_discharge_values)):
 
                 if section_discharge_value >= 0.0:
 
@@ -246,6 +251,28 @@ class DriverScenario:
                     section_scenario_tr_right = int(section_scenario_tr_right)
                     section_scenario_tr_left = int(section_scenario_tr_left)
 
+                    if section_scenario_tr < section_scenario_tr_min:
+                        section_scenario_tr = section_scenario_tr_min
+                        section_scenario_tr_check.append(section_discharge_time.strftime(time_format_algorithm))
+                    elif section_scenario_tr > section_scenario_tr_max:
+                        log_stream.error(' ===> At time "' + section_discharge_time.strftime(time_format_algorithm) +
+                                         '" find the "tr ' + str(section_scenario_tr) +
+                                         '" greater then "tr_max ' + str(section_scenario_tr_max) + '"')
+                        raise NotImplementedError('Case not implemented yet')
+
+                    if section_scenario_tr_right < section_scenario_tr_min:
+                        section_scenario_tr_right_check.append(section_discharge_time.strftime(time_format_algorithm))
+                        section_scenario_tr_right = section_scenario_tr_min
+                        section_scenario_tr_left = section_scenario_tr_min
+                        section_scenario_weight_right = 0.5
+                        section_scenario_weight_left = 0.5
+
+                    elif section_scenario_tr_left > section_scenario_tr_max:
+                        log_stream.error(' ===> At time "' + section_discharge_time.strftime(time_format_algorithm) +
+                                         '" find the "tr_left ' + str(section_scenario_tr_left) +
+                                         '" greater then "tr_max ' + str(section_scenario_tr_max) + '"')
+                        raise NotImplementedError('Case not implemented yet')
+
                 else:
                     section_scenario_tr = np.nan
                     section_scenario_tr_right, section_scenario_tr_left = np.nan, np.nan
@@ -256,6 +283,17 @@ class DriverScenario:
                 section_scenario_trs_left.append(section_scenario_tr_left)
                 section_scenario_weights_right.append(section_scenario_weight_right)
                 section_scenario_weights_left.append(section_scenario_weight_left)
+
+            if section_scenario_tr_check:
+                section_scenario_tr_str = ', '.join(section_scenario_tr_check)
+                log_stream.warning(' ===> At times "' + section_scenario_tr_str +
+                                   '" found the "tr" less then "tr_min ' + str(section_scenario_tr_min) + '"')
+                log_stream.warning(' ===> Set the "tr" equal to "tr_min"')
+            if section_scenario_tr_right_check:
+                section_scenario_tr_str = ', '.join(section_scenario_tr_right_check)
+                log_stream.warning(' ===> At times "' + section_scenario_tr_str +
+                                   '" found the "tr_right" less then "tr_min ' + str(section_scenario_tr_min) + '"')
+                log_stream.warning(' ===> Set the "tr_right" equal to "tr_min"')
         else:
             section_scenario_trs = [np.nan] * section_discharge_values.__len__()
             section_scenario_trs_right = [np.nan] * section_discharge_values.__len__()
@@ -816,6 +854,10 @@ class DriverScenario:
                                                                  '" is not available. Check your folder.')
                                                 raise FileNotFoundError('File not found.')
 
+                                            # DEBUG
+                                            # test_left = file_data_h_left[section_db_idx_hydraulic[0], section_db_idx_hydraulic[1]]
+                                            # test_right = file_data_h_right[section_db_idx_hydraulic[0], section_db_idx_hydraulic[1]]
+
                                             file_data_h = (file_data_h_right * section_scenario_wg_right_check +
                                                            file_data_h_left * section_scenario_wg_left_check) / 2
                                             file_data_h[file_data_h < 0.0] = 0.0
@@ -1052,8 +1094,10 @@ class DriverScenario:
                             section_scenario_trs,\
                                 section_scenario_trs_right, section_scenario_trs_left, \
                                 section_scenario_weights_right, section_scenario_weights_left\
-                                    = self.compute_scenario_tr(section_discharge_idx, section_discharge_value,
-                                                               section_discharge_name=section_db_description)
+                                = self.compute_scenario_tr(
+                                    section_discharge_idx, section_discharge_time, section_discharge_value,
+                                    section_discharge_name=section_db_description,
+                                    section_scenario_tr_min=self.tr_min, section_scenario_tr_max=self.tr_max)
 
                             domain_scenario_workspace[section_obj_key] = {}
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs
@@ -1082,8 +1126,12 @@ class DriverScenario:
                             section_scenario_trs,\
                                 section_scenario_trs_right, section_scenario_trs_left, \
                                 section_scenario_weights_right, section_scenario_weights_left\
-                                = self.compute_scenario_tr(section_discharge_idx, section_discharge_values,
-                                                           section_discharge_name=section_db_description)
+                                = self.compute_scenario_tr(
+                                    section_discharge_idx, section_discharge_times, section_discharge_values,
+                                    section_discharge_name=section_db_description,
+                                    section_scenario_tr_min=self.tr_min, section_scenario_tr_max=self.tr_max)
+
+                            section_tmp = list(zip(section_discharge_values, section_scenario_trs, section_scenario_trs_right, section_scenario_trs_left))
 
                             domain_scenario_workspace[section_obj_key] = {}
                             domain_scenario_workspace[section_obj_key][self.domain_scenario_index_tag] = section_scenario_trs

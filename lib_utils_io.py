@@ -196,7 +196,7 @@ def save_file_json(file_name, file_data_dict, file_indent=4, file_sep=',', file_
 # Method to read file json
 def read_file_json(file_name):
     with open(file_name) as file_handle:
-        file_data = json.load(file_handle, encoding='utf-8')
+        file_data = json.load(file_handle)  #, encoding='utf-8')
     return file_data
 # -------------------------------------------------------------------------------------
 

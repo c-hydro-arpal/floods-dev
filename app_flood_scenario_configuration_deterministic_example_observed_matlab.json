@@ -4,17 +4,17 @@
       "title": "Floods - Scenarios",
       "web-site": "",
       "source": "Python application developed by CIMA Research Foundation",
-      "history": "1.9.0 [20220223]",
+      "history": "1.9.1 [20220228]",
       "project-info": "floods",
       "algorithm": ""
     },
     "flags": {
       "cleaning_static_data": false,
-      "cleaning_ancillary_data_discharge_obs": true,
-      "cleaning_ancillary_data_discharge_sim": true,
-      "cleaning_ancillary_data_scenario_info": true,
-      "cleaning_ancillary_data_scenario_file": true,
-      "cleaning_ancillary_data_scenario_maps": true,
+      "cleaning_ancillary_data_discharge_obs": false,
+      "cleaning_ancillary_data_discharge_sim": false,
+      "cleaning_ancillary_data_scenario_info": false,
+      "cleaning_ancillary_data_scenario_file": false,
+      "cleaning_ancillary_data_scenario_maps": false,
       "cleaning_dynamic_plot": true,
       "cleaning_dynamic_data": true
     },

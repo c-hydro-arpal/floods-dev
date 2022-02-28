@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Version 1.9.1 [2022-02-28]
+**************************
+- APP: app_flood_scenario_main.py
+	- Bugs fixing for the weighted scenarios part
+
 Version 1.9.0 [2022-02-23]
 **************************
 - APP: app_flood_scenario_main.py

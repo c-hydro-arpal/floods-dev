@@ -40,13 +40,18 @@ geo_lookup_table = {'Latdem': 'latitude', 'Londem': 'longitude',
 # -------------------------------------------------------------------------------------
 # Method to read geographical file in mat format
 def read_file_geo(file_name):
-    file_ws = {}
-    file_data = read_mat(file_name)
-    for file_key, file_values in file_data.items():
-        if file_key in list(geo_lookup_table.keys()):
-            var_idx = list(geo_lookup_table.keys()).index(file_key)
-            var_name = list(geo_lookup_table.values())[var_idx]
-            file_ws[var_name] = file_values
+
+    if file_name.endswith('mat'):
+        file_ws = {}
+        file_data = read_mat(file_name)
+        for file_key, file_values in file_data.items():
+            if file_key in list(geo_lookup_table.keys()):
+                var_idx = list(geo_lookup_table.keys()).index(file_key)
+                var_name = list(geo_lookup_table.values())[var_idx]
+                file_ws[var_name] = file_values
+    else:
+        log_stream.error(' ===> File format "' + file_name + '" is not supported')
+        raise NotImplementedError('Case not implemented yet')
 
     return file_ws
 # -------------------------------------------------------------------------------------
@@ -56,15 +61,19 @@ def read_file_geo(file_name):
 # Method to read drainage area file in mat format
 def read_file_drainage_area(file_name, file_excluded_keys=None):
 
-    if file_excluded_keys is None:
-        file_excluded_keys = ['__header__', '__version__', '__globals__', '__function_workspace__',
-                              'Lat_dominio_UTM32', 'Lon_dominio_UTM32', 'None']
+    if file_name.endswith('mat'):
+        if file_excluded_keys is None:
+            file_excluded_keys = ['__header__', '__version__', '__globals__', '__function_workspace__',
+                                  'Lat_dominio_UTM32', 'Lon_dominio_UTM32', 'None']
 
-    file_ws = {}
-    file_data = read_mat(file_name)
-    for file_key, file_values in file_data.items():
-        if file_key not in file_excluded_keys:
-            file_ws[file_key] = file_values
+        file_ws = {}
+        file_data = read_mat(file_name)
+        for file_key, file_values in file_data.items():
+            if file_key not in file_excluded_keys:
+                file_ws[file_key] = file_values
+    else:
+        log_stream.error(' ===> File format "' + file_name + '" is not supported')
+        raise NotImplementedError('Case not implemented yet')
 
     return file_ws
 # -------------------------------------------------------------------------------------
@@ -137,8 +146,8 @@ def compute_section_area(mask_map, mask_tranform,
                                          np.abs(mask_tranform[0]), np.abs(mask_tranform[4]))
 
     import math
-    cell_size_x = Deg2Km_2(np.abs(mask_tranform[0]))
-    cell_size_y = Deg2Km_2(np.abs(mask_tranform[4]))
+    cell_size_x = deg_2_km(np.abs(mask_tranform[0]))
+    cell_size_y = deg_2_km(np.abs(mask_tranform[4]))
 
     area_cell_values = cell_size_y * cell_size_x
 
@@ -161,8 +170,8 @@ def compute_section_area(mask_map, mask_tranform,
 
 
 # --------------------------------------------------------------------------------
-# Method to convert decimal degrees to km
-def Deg2Km_2(deg, lat=None):
+# Method to convert decimal degrees to km [method2]
+def deg_2_km(deg, lat=None):
     if lat is None:
         km = deg * 110.54
     else:
@@ -171,14 +180,16 @@ def Deg2Km_2(deg, lat=None):
 # --------------------------------------------------------------------------------
 
 
+'''
 # --------------------------------------------------------------------------------
 # Method to convert decimal degrees to km (2)
-def Deg2Km(deg):
+def deg_2_km(deg):
     # Earth radius
     dRE = 6378.1370
-    km = deg * (np.pi * dRE) / 180;
+    km = deg * (np.pi * dRE) / 180
     return km
 # --------------------------------------------------------------------------------
+'''
 
 
 # -------------------------------------------------------------------------------------
