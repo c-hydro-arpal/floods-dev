@@ -859,11 +859,12 @@ class DriverScenario:
                                             # test_right = file_data_h_right[section_db_idx_hydraulic[0], section_db_idx_hydraulic[1]]
 
                                             file_data_h = (file_data_h_right * section_scenario_wg_right_check +
-                                                           file_data_h_left * section_scenario_wg_left_check) / 2
+                                                           file_data_h_left * section_scenario_wg_left_check)
                                             file_data_h[file_data_h < 0.0] = 0.0
 
-                                            section_scenario_tr_select = (section_scenario_tr_right_select +
-                                                                          section_scenario_tr_left_select) / 2
+                                            section_scenario_tr_select = (
+                                                section_scenario_tr_right_select * section_scenario_wg_right_check +
+                                                section_scenario_tr_left_select * section_scenario_wg_left_check)
 
                                         else:
                                             log_stream.info(' ===> Scenario tiling method "' +

@@ -12,9 +12,9 @@
       "cleaning_static_data": false,
       "cleaning_ancillary_data_discharge_obs": false,
       "cleaning_ancillary_data_discharge_sim": false,
-      "cleaning_ancillary_data_scenario_info": false,
-      "cleaning_ancillary_data_scenario_file": false,
-      "cleaning_ancillary_data_scenario_maps": false,
+      "cleaning_ancillary_data_scenario_info": true,
+      "cleaning_ancillary_data_scenario_file": true,
+      "cleaning_ancillary_data_scenario_maps": true,
       "cleaning_dynamic_plot": true,
       "cleaning_dynamic_data": true
     },
@@ -25,7 +25,7 @@
       "tr_max" : 500,
       "tr_freq": 1,
       "drift_group": 6,
-      "scenario_tiling": "weighted",
+      "scenario_tiling": "rounded",
       "scenario_boundary": "both",
       "scenario_analysis": "all_period",
       "scenario_type": "observed"

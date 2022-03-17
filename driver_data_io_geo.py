@@ -60,7 +60,10 @@ class DriverGeo:
         self.folder_name_tag = 'folder_name'
 
         self.domain_name_list = self.alg_ancillary['domain_name']
-        self.hydro_group = self.alg_ancillary['drift_group']
+        if 'drift_group' in list(self.alg_ancillary.keys()):
+            self.hydro_group = self.alg_ancillary['drift_group']
+        else:
+            self.hydro_group = None
         self.hydro_format = '{:02d}'
 
         self.folder_name_geo = src_dict[self.flag_geo_data][self.folder_name_tag]
